@@ -18,7 +18,8 @@ exports.create = (req, res) => {
     occupied: req.body.occupied,
     lastReservationDate: req.body.lastReservationDate,
     userId: req.body.userId,
-    ParkingId: req.body.ParkingId
+    ParkingId: req.body.ParkingId,
+    isRenting: req.body.isRenting
   };
 
   // Save Box in the database
@@ -50,6 +51,7 @@ exports.findAllBoxesInAParking = (req, res) => {
       });
     });
 };
+
 
 // Retrieve all Boxes from the database.
 exports.findAll = (req, res) => {
@@ -143,6 +145,43 @@ exports.deleteAll = (req, res) => {
       return res.status(500).send({
         message:
           err.message || "Some error occurred while removing all tutorials."
+      });
+    });
+};
+
+/*----------------------------------------------  PREGUNTAR ------------------------------------------------------------ */
+
+
+// Retrieve all Boxes from the database.
+exports.findAllRentingBoxesInAparking = (req, res) => {
+  const id = req.params.id;
+  Box.findAll({
+    where: { parkingId: id, isRenting: true }
+  })
+    .then(data => {
+      return res.send(data);
+    })
+    .catch(err => {
+      return res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving renting boxes."
+      });
+    });
+};
+
+// Retrieve all Boxes from the database.
+exports.findAllNotRentingBoxesInAParking = (req, res) => {
+  const id = req.params.id;
+  Box.findAll({
+    where: { parkingId: id, isRenting: false }
+  })
+    .then(data => {
+      return res.send(data);
+    })
+    .catch(err => {
+      return res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving private boxes."
       });
     });
 };

@@ -51,6 +51,10 @@ module.exports = {
           allowNull: false,
           type: Sequelize.DATE,
         },
+        isRenting: {
+          allowNull: false,
+          type: Sequelize.BOOLEAN,
+        }
       }),
     down: (queryInterface /* , Sequelize */) => queryInterface.dropTable("boxes"),
   }
