@@ -73,7 +73,7 @@ const Simulator = () => {
           <Col>
             <h1>Box Id: {SIMULATED_BOX_ID}</h1>
             <p>Door {stateBox === BOX_CLOSED ? 'closed' : 'opened'}</p>
-            <p>Charger {stateCharger === CHARGER_PLUGGED_OUT ? 'plugged out' : 'plugged in'}</p>
+            <p>Charger {stateCharger === CHARGER_PLUGGED_OUT ? 'unplugged' : 'plugged in'}</p>
           </Col>
           <Col>
             {stateCharger === CHARGER_PLUGGED_OUT && stateBox === BOX_OPENED ? <Button onClick={plugChargerIn}>Plug the Charger in</Button> : <></>}

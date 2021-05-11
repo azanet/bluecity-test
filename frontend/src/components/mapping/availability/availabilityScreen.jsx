@@ -45,7 +45,7 @@ import { formatTimeLeft } from './utils/util';
 |--------------------------------------------------
 */
 import { OCCUPIED, FREE, RESERVED, FIVE_MINUTES, THIS_USER_HAS_NO_RESERVATION, getApiUser, CLOSE_DISTANCE_TO_PARKING, BEGIN_OF_TIMES, MINIMUM_DISTANCE_INCREMENT } from './constants/constants'
-import { PARKING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT } from '../parking-process/constants/constants';
+import { PARKING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT} from '../parking-process/constants/constants';
 
 const AvailabilityScreen = ({ location, history }) => {
 
@@ -391,6 +391,7 @@ const AvailabilityScreen = ({ location, history }) => {
                   text={`Click on the Box number to reserve a ${checkingForRenting ? 'scooter' : 'parking box'}.`}
                   icon={faInfoCircle}
                 />
+
                 :
                 <MyMarker
                   color='blue'
