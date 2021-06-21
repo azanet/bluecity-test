@@ -9,6 +9,7 @@ import Rincon from "./Rincon";
 import Terradas from "./Terradas";
 import Bernat from "./Bernat";
 import Koalas from "./Koalas";
+
 import { useTranslation } from "react-i18next";
 
 import { setLanguage, getLanguage } from "../../../utils/common";

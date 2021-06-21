@@ -15,8 +15,6 @@ import Image from "react-bootstrap/Image";
 
 import { useMediaQuery } from "react-responsive";
 
-
-
 const useStyles = makeStyles(theme => ({
   root: {
     marginTop: "10vh"
@@ -35,11 +33,8 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const LayoutDefault = ({ children }) => {
-
   const classes = useStyles();
   const isMobile = useMediaQuery({ query: `(max-width: 760px)` });
-
-
 
   return (
     <>
@@ -48,15 +43,9 @@ const LayoutDefault = ({ children }) => {
       ) : (
         <></>
       )}
-      
-
-
-       
-  
 
       <main className="site-content">{children}</main>
 
-      
       {/* <Footer /> */}
       {/* <Paper elevation={0} className={myClasses.root}> */}
 

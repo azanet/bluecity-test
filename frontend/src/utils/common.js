@@ -49,18 +49,17 @@ export const setUserSession = (token, user, apiToken, apiUser) => {
   sessionStorage.setItem("apiUser", JSON.stringify(apiUser));
 };
 
-///////////////////////////////////////////////////////////////
-///////fabricando el metodo para almacenar la informacion
+
+// SET language from localStorage INDEX
 export const setLanguage = lan => {
   localStorage.setItem("language", lan);
 };
 
-//CREANDO EL GET para recolectar el idioma
+// GET language from localStorage INDEX
 export const getLanguage = () => {
   return localStorage.getItem("language") || null;
 };
 
-/////////////////////////////////////////////////////////////////
 
 // Geolocation
 export const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
