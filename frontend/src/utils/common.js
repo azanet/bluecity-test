@@ -60,6 +60,15 @@ export const getDistanceToOpenBox = () => {
   return parseInt(distance);
 }
 
+export const setLanguage = lan => {
+  localStorage.setItem("language", lan);
+};
+
+//CREANDO EL GET para recolectar el idioma
+export const getLanguage = () => {
+  return localStorage.getItem("language") || null;
+};
+
 // Geolocation
 export const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Radius of the earth in km
