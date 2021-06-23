@@ -39,7 +39,13 @@ const LayoutDefault = ({ children }) => {
   return (
     <>
       {isMobile ? (
-        <Header navPosition="right" className="reveal-from-bottom" />
+        <>
+          <Header navPosition="right" className="reveal-from-bottom" />
+
+          <br></br>
+          <br></br>
+          <br></br>
+        </>
       ) : (
         <></>
       )}

@@ -38,6 +38,7 @@ const Home = () => {
   useEffect(() => {
     setLanguageState(getLanguage());
   }, []);
+
   return (
     <>
       {webpage == "rincon" ? (
@@ -50,7 +51,7 @@ const Home = () => {
         <Koalas />
       ) : (
         <>
-          <div className="illustration-section-01" >
+          <div className="text-right">
             <Select
               labelId="language"
               id="select"
@@ -70,6 +71,7 @@ const Home = () => {
                 &nbsp;English
               </MenuItem>
             </Select>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
           </div>
 
           <Hero className="illustration-section-01" />
@@ -79,7 +81,6 @@ const Home = () => {
             imageFill
             className="illustration-section-02"
           />
-
           <FeaturesSplit
             invertMobile
             topDivider
