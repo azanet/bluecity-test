@@ -62,7 +62,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const MyRentingProcessOutCard = ({ parking, stateRentingProcess, noResponseFromParkingDevice, continueWithProcess }) => {
+const MyRentingProcessOutCard = ({ parking, stateRentingProcess, noResponseFromParkingDevice, continueWithProcess, doorClosedBeforeDetectorFires }) => {
 
   const classes = useStyles();
 
@@ -125,11 +125,26 @@ const MyRentingProcessOutCard = ({ parking, stateRentingProcess, noResponseFromP
               <Row className='pt-2'>
                 <Col>
                   <MyMarker
-                    color={stateRentingProcess >= RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
+                    color={doorClosedBeforeDetectorFires || stateRentingProcess >= RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
                     state={null}
                     text={t('Closed box door')}
-                    icon={stateRentingProcess >= RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
+                    icon={doorClosedBeforeDetectorFires || stateRentingProcess >= RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
                   />
+                  {doorClosedBeforeDetectorFires ?
+                    <Grid
+                      container
+                      className={classes.buttonContainer}
+                      direction="column"
+                    >
+                      <Grid item xs={12}>
+                        <Button variant="contained" className={classes.buttons} onClick={continueWithProcess}>
+                          {t('Continue')}
+                        </Button>
+                      </Grid>
+                    </Grid>
+                    :
+                    <></>
+                  }
                 </Col>
               </Row>
             </>

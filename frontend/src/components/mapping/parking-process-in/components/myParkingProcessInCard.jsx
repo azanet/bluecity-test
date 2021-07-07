@@ -62,7 +62,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const MyParkingProcessInCard = ({ parking, stateParkingProcess, noResponseFromParkingDevice, continueWithProcess }) => {
+const MyParkingProcessInCard = ({ parking, stateParkingProcess, noResponseFromParkingDevice, continueWithProcess, doorClosedBeforeDetectorFires }) => {
 
   const classes = useStyles();
 
@@ -78,8 +78,7 @@ const MyParkingProcessInCard = ({ parking, stateParkingProcess, noResponseFromPa
       />
       <MyCarImg id={id} />
       <Card.Body>
-        {
-          noResponseFromParkingDevice ?
+        {noResponseFromParkingDevice ?
             <>
               <MyMarker
                 color='blue'
@@ -132,15 +131,29 @@ const MyParkingProcessInCard = ({ parking, stateParkingProcess, noResponseFromPa
                   />
                 </Col>
               </Row> */}
-              <Row></Row>
               <Row className='pt-2'>
                 <Col>
                   <MyMarker
-                    color={stateParkingProcess >= PARKING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
+                    color={doorClosedBeforeDetectorFires || stateParkingProcess >= PARKING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
                     state={null}
                     text={t('Close box door')}
-                    icon={stateParkingProcess >= PARKING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
+                    icon={doorClosedBeforeDetectorFires || stateParkingProcess >= PARKING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
                   />
+                  {doorClosedBeforeDetectorFires ?
+                    <Grid
+                      container
+                      className={classes.buttonContainer}
+                      direction="column"
+                    >
+                      <Grid item xs={12}>
+                        <Button variant="contained" className={classes.buttons} onClick={continueWithProcess}>
+                          {t('Continue')}
+                        </Button>
+                      </Grid>
+                    </Grid>
+                    :
+                    <></>
+                  }
                 </Col>
               </Row>
             </>

@@ -513,14 +513,25 @@ io.on("connect", (socket) => {
 
     socket.on("charger-plugged-in", (data) => {
       // From Box
-console.log("charger-plugged-in");
+      console.log("charger-plugged-in");
       Box.findByPk(data.boxId)
         .then((data) => {
           console.log("charger-plugged-in inside");
-          console.log(data);
+          // console.log(data);
           if (data.dataValues.state == constants.PARKING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
-            data.dataValues.state == constants.RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED) {
-            Box.update({ state: data.dataValues.state + 1 }, {
+            data.dataValues.state == constants.RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
+            data.dataValues.state == constants.PARKING_MODE_PULLING_OUT_SCOOTER_CHARGER_PULLED_OUT_CONFIRMATION_RECEIVED ||
+            data.dataValues.state == constants.RENTING_MODE_PULLING_OUT_SCOOTER_CHARGER_PULLED_OUT_CONFIRMATION_RECEIVED) {
+            let newState = null;
+            if (data.dataValues.state == constants.PARKING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
+              data.dataValues.state == constants.RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED) {
+              newState = data.dataValues.state + 1;
+            }
+            if (data.dataValues.state == constants.PARKING_MODE_PULLING_OUT_SCOOTER_CHARGER_PULLED_OUT_CONFIRMATION_RECEIVED ||
+              data.dataValues.state == constants.RENTING_MODE_PULLING_OUT_SCOOTER_CHARGER_PULLED_OUT_CONFIRMATION_RECEIVED) {
+              newState = data.dataValues.state - 1;
+            }
+            Box.update({ state: newState }, {
               where: { id: data.dataValues.id }
             }).then(num => {
               if (num == 1) {
@@ -547,8 +558,19 @@ console.log("charger-plugged-in");
       Box.findByPk(data.boxId)
         .then((data) => {
           if (data.dataValues.state == constants.PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
-            data.dataValues.state == constants.RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED) {
-            Box.update({ state: data.dataValues.state + 1 }, {
+            data.dataValues.state == constants.RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
+            data.dataValues.state == constants.PARKING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ||
+            data.dataValues.state == constants.RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED) {
+            let newState = null;
+            if (data.dataValues.state == constants.PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
+              data.dataValues.state == constants.RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED) {
+              newState = data.dataValues.state + 1;
+            }
+            if (data.dataValues.state == constants.PARKING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ||
+              data.dataValues.state == constants.RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED) {
+              newState = data.dataValues.state - 1;
+            }
+            Box.update({ state: newState }, {
               where: { id: data.dataValues.id }
             }).then(num => {
               if (num == 1) {
@@ -569,15 +591,104 @@ console.log("charger-plugged-in");
 
     socket.on("box-closed", (data) => {
       // From Box
-console.log("box-closed")
+      console.log("box-closed")
       Box.findByPk(data.boxId)
         .then((data) => {
           console.log("box-closed inside")
           console.log(data);
+
+          if (data.dataValues.state == constants.PARKING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED) {
+            //The door was closed before introducing the scooter
+            io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, doorClosedBeforeDetectorFires: true });
+
+            //reset parking after 5 seconds
+            setTimeout(function () {
+              Box.update({
+                state: constants.NEITHER_PARKING_NOT_RENTING,
+                lastReservationDate: constants.BEGIN_OF_TIMES,
+                occupied: false,
+                userId: null
+              }, {
+                where: { id: data.dataValues.id }
+              }).then((res) => {
+                //reset done
+                io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, resetFromServer: true });
+              }).catch((error) => console.log(error));
+            }, 5000);
+
+            return;
+          }
+
+          if (data.dataValues.state == constants.PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED) {
+            //The door was closed before pulling out the scooter
+            io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, doorClosedBeforeDetectorFires: true });
+
+            //reset parking after 5 seconds
+            setTimeout(function () {
+              Box.update({
+                state: constants.PARKING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED
+              }, {
+                where: { id: data.dataValues.id }
+              }).then((res) => {
+                //reset done
+                io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, resetFromServer: true });
+              }).catch((error) => console.log(error));
+            }, 5000);
+
+            return;
+          }
+
+          if (data.dataValues.state == constants.RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED) {
+            //The door was closed before pulling out the scooter
+            io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, doorClosedBeforeDetectorFires: true });
+
+            //reset parking after 5 seconds
+            setTimeout(function () {
+              Box.update({
+                userId: null,
+                lastReservationDate: constants.BEGIN_OF_TIMES,
+                state: constants.NEITHER_PARKING_NOT_RENTING,
+                occupied: true
+              }, {
+                where: { id: data.dataValues.id }
+              }).then(boxData => {
+                io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, resetFromServer: true });
+              }).catch(error => {
+                console.log("error");
+              })
+            }, 5000);
+
+            return;
+          }
+
+          if (data.dataValues.state == constants.RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED) {
+            //The door was closed before introducing the scooter
+            io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, doorClosedBeforeDetectorFires: true });
+
+            //reset parking after 5 seconds
+            setTimeout(function () {
+              Box.update({
+                userId: null,
+                lastReservationDate: constants.BEGIN_OF_TIMES,
+                state: constants.NEITHER_PARKING_NOT_RENTING,
+                occupied: false
+              }, {
+                where: { id: data.dataValues.id }
+              }).then(boxData => {
+                io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, resetFromServer: true });
+              }).catch(error => {
+                console.log("error");
+              })
+            }, 5000);
+
+            return;
+          }
+
           if (data.dataValues.state == constants.PARKING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ||
             data.dataValues.state == constants.PARKING_MODE_PULLING_OUT_SCOOTER_CHARGER_PULLED_OUT_CONFIRMATION_RECEIVED ||
             data.dataValues.state == constants.RENTING_MODE_PULLING_OUT_SCOOTER_CHARGER_PULLED_OUT_CONFIRMATION_RECEIVED ||
             data.dataValues.state == constants.RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED) {
+            //If it enters here it is the normal case
             Box.update({
               state: data.dataValues.state + 1, occupied: true,
               lastReservationDate:

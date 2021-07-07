@@ -41,7 +41,8 @@ import ScooterDataService from '../../../services/scooter.service';
 import {
   RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED,
   RENTING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT,
-  RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED
+  RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED,
+  RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED
 } from '../constants/constants';
 import { BEGIN_OF_TIMES, getApiUser, NEITHER_PARKING_NOT_RENTING } from '../availability/constants/constants';
 
@@ -54,6 +55,8 @@ const RentingProcessScreen = ({ location, history }) => {
   const socketRef = useRef();
 
   const [stateRentingProcess, setStateRentingProcess] = useState(RENTING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT);
+
+  const [doorClosedBeforeDetectorFires, setDoorClosedBeforeDetectorFires] = useState(false);
 
   const refreshBoxState = () => {
     BoxDataService.get(boxId).then((data) => {
@@ -86,13 +89,28 @@ const RentingProcessScreen = ({ location, history }) => {
     });
 
     const data = {
-      state: 0,
+      state: NEITHER_PARKING_NOT_RENTING,
       lastReservationDate: BEGIN_OF_TIMES,
       occupied: true,
       userId: null
     }
     BoxDataService.update(boxId, data).then((res) => {
       history.push("/main")
+    }).catch((error) => console.log(error));
+  }
+
+  const continueWithWhileRenting = () => {
+    console.log("continueWithWhileRenting")
+    const boxData = {
+      userId: null,
+      lastReservationDate: BEGIN_OF_TIMES,
+      state: NEITHER_PARKING_NOT_RENTING,
+      occupied: false
+    };
+    BoxDataService.update(boxId, boxData).then(data => {
+      history.push({
+        pathname: '/while-renting',
+      });
     }).catch((error) => console.log(error));
   }
 
@@ -109,6 +127,16 @@ const RentingProcessScreen = ({ location, history }) => {
 
     socketRef.current.on('refresh-box-state', data => {
       if (data.boxId === boxId) {
+        if(data.resetFromServer){
+          history.push({
+            pathname: '/main',
+          });
+          return;
+        }
+        if (data.doorClosedBeforeDetectorFires) {
+          setDoorClosedBeforeDetectorFires(true);
+          return;
+        }
         if(data.resetFromServer){
           history.push("/main");
           return;
@@ -132,12 +160,21 @@ const RentingProcessScreen = ({ location, history }) => {
               parking={parking}
               stateRentingProcess={stateRentingProcess}
               continueWithProcess={continueWithProcess}
+              doorClosedBeforeDetectorFires={doorClosedBeforeDetectorFires}
+              continueWithWhileRenting={continueWithWhileRenting}
             />
           </Card>
         </Row>
         <Row className='pt-3'>
           <Col>
-            {
+            {doorClosedBeforeDetectorFires ?
+              <MyMarker
+                color='blue'
+                state={null}
+                text={`${t('The door was closed before introducing the scooter')}. ${t('Click continue to try it again...')}.`}
+                icon={faInfoCircle}
+              />
+              :
               stateRentingProcess === RENTING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT
                 ?
                 <MyMarker

@@ -39,7 +39,8 @@ import {
   PARKING_MODE_PULLING_OUT_SCOOTER_CHARGER_PULLED_OUT_CONFIRMATION_RECEIVED,
   PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED,
   PARKING_MODE_PULLING_OUT_SCOOTER_ORDER_TO_OPEN_DOOR_SENT,
-  NEITHER_PARKING_NOT_RENTING
+  NEITHER_PARKING_NOT_RENTING,
+  PARKING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED
 } from '../constants/constants';
 
 const ParkingProcessOutScreen = ({ location, history }) => {
@@ -52,16 +53,35 @@ const ParkingProcessOutScreen = ({ location, history }) => {
 
   const [stateParkingProcess, setStateParkingProcess] = useState(NEITHER_PARKING_NOT_RENTING);
 
+  const [doorClosedBeforeDetectorFires, setDoorClosedBeforeDetectorFires] = useState(false);
+
   const continueWithProcess = () => {
-      const data = {
-        state: 0,
-        lastReservationDate: BEGIN_OF_TIMES,
-        occupied: false,
-        userId: null
-      }
-      BoxDataService.update(boxId, data).then((res) => {
-        history.push("/main")
-      }).catch((error) => console.log(error));
+    console.log("continueWithProcess")
+    const data = {
+      state: 0,
+      lastReservationDate: BEGIN_OF_TIMES,
+      occupied: false,
+      userId: null
+    }
+    BoxDataService.update(boxId, data).then((res) => {
+      history.push("/main")
+    }).catch((error) => console.log(error));
+  }
+
+  const continueWithWhileParking = () => {
+    console.log("continueWithWhileParking")
+    const data = {
+      state: PARKING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED
+    }
+    BoxDataService.update(boxId, data).then((res) => {
+      history.push({
+        pathname: "/while-parking",
+        state: {
+          parking,
+          boxId
+        },
+      });
+    }).catch((error) => console.log(error));
   }
 
   const refreshBoxState = () => {
@@ -85,7 +105,11 @@ const ParkingProcessOutScreen = ({ location, history }) => {
 
     socketRef.current.on('refresh-box-state', data => {
       if (data.boxId === boxId) {
-        if(data.resetFromServer){
+        if (data.doorClosedBeforeDetectorFires) {
+          setDoorClosedBeforeDetectorFires(true);
+          return;
+        }
+        if (data.resetFromServer) {
           history.push("/main");
           return;
         }
@@ -108,12 +132,21 @@ const ParkingProcessOutScreen = ({ location, history }) => {
               parking={parking}
               stateParkingProcess={stateParkingProcess}
               continueWithProcess={continueWithProcess}
+              doorClosedBeforeDetectorFires={doorClosedBeforeDetectorFires}
+              continueWithWhileParking={continueWithWhileParking}
             />
           </Card>
         </Row>
         <Row className='pt-3'>
           <Col>
-            {
+            {doorClosedBeforeDetectorFires ?
+              <MyMarker
+                color='blue'
+                state={null}
+                text={`${t('The door was closed before pulling out the scooter')}. ${t('Click continue to try it again...')}.`}
+                icon={faInfoCircle}
+              />
+              :
               stateParkingProcess === PARKING_MODE_PULLING_OUT_SCOOTER_ORDER_TO_OPEN_DOOR_SENT
                 ?
                 <MyMarker

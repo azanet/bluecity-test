@@ -60,6 +60,8 @@ const ParkingProcessInScreen = ({ location, history }) => {
 
   const [noResponseFromParkingDevice, setNoResposeFromParkingDevice] = useState(false);
 
+  const [doorClosedBeforeDetectorFires, setDoorClosedBeforeDetectorFires] = useState(false);
+
   const refreshBoxState = () => {
     // console.log("refreshBoxState")
 
@@ -95,7 +97,17 @@ const ParkingProcessInScreen = ({ location, history }) => {
 
     socketRef.current.on('refresh-box-state', data => {
       if (data.boxId === boxId) {
-        // console.log("box state refreshed");
+        if (data.resetFromServer) {
+          history.push({
+            pathname: "/main"
+          });
+          return;
+        }
+        if (data.doorClosedBeforeDetectorFires) {
+          setDoorClosedBeforeDetectorFires(true);
+          return;
+        }
+        console.log("box state will be refreshed");
         refreshBoxState();
       }
     });
@@ -144,12 +156,20 @@ const ParkingProcessInScreen = ({ location, history }) => {
               stateParkingProcess={stateParkingProcess}
               noResponseFromParkingDevice={noResponseFromParkingDevice}
               continueWithProcess={continueWithProcess}
+              doorClosedBeforeDetectorFires={doorClosedBeforeDetectorFires}
             />
           </Card>
         </Row>
         <Row className='pt-3'>
           <Col>
-            {
+            {doorClosedBeforeDetectorFires ?
+              <MyMarker
+                color='blue'
+                state={null}
+                text={`${t('The door was closed before introducing the scooter')}. ${t('Click continue to start parking again...')}.`}
+                icon={faInfoCircle}
+              />
+              :
               stateParkingProcess === PARKING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT
                 ?
                 <MyMarker
@@ -185,7 +205,7 @@ const ParkingProcessInScreen = ({ location, history }) => {
           </Col>
         </Row>
       </MyContainer>
-      <Footer/>
+      <Footer />
     </>
   )
 };
