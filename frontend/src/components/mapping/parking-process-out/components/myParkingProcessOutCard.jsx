@@ -63,7 +63,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const MyParkingProcessOutCard = ({ parking, stateParkingProcess, continueWithProcess }) => {
+const MyParkingProcessOutCard = ({ parking, stateParkingProcess, continueWithProcess, doorClosedBeforeDetectorFires, continueWithWhileParking }) => {
 
   const { id, address, name } = parking;
 
@@ -112,12 +112,12 @@ const MyParkingProcessOutCard = ({ parking, stateParkingProcess, continueWithPro
         <Row className='pt-2'>
           <Col>
             <MyMarker
-              color={stateParkingProcess >= PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
+              color={doorClosedBeforeDetectorFires || stateParkingProcess >= PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
               state={null}
               text={t('Close box door')}
-              icon={stateParkingProcess >= PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
+              icon={doorClosedBeforeDetectorFires || stateParkingProcess >= PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
             />
-            {
+            {doorClosedBeforeDetectorFires ||
               stateParkingProcess == PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED?
                 <Grid
                   container
@@ -125,7 +125,7 @@ const MyParkingProcessOutCard = ({ parking, stateParkingProcess, continueWithPro
                   direction="column"
                 >
                   <Grid item xs={12}>
-                    <Button variant="contained" className={classes.buttons} onClick={continueWithProcess}>
+                    <Button variant="contained" className={classes.buttons} onClick={doorClosedBeforeDetectorFires? continueWithWhileParking : continueWithProcess}>
                       {t('Continue')}
                   </Button>
                   </Grid>

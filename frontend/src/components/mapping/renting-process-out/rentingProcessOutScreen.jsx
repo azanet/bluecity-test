@@ -56,6 +56,8 @@ const RentingProcessScreen = ({ location, history }) => {
 
   const [stateRentingProcess, setStateRentingProcess] = useState(RENTING_MODE_PULLING_OUT_SCOOTER_ORDER_TO_OPEN_DOOR_SENT);  //NEITHER_PARKING_NOT_RENTING
 
+  const [doorClosedBeforeDetectorFires, setDoorClosedBeforeDetectorFires] = useState(false);
+
   const openBoxTimeout = useRef(null);
 
   const [noResponseFromParkingDevice, setNoResposeFromParkingDevice] = useState(false);
@@ -77,6 +79,16 @@ const RentingProcessScreen = ({ location, history }) => {
 
     socketRef.current.on('refresh-box-state', data => {
       if (data.boxId === boxId) {
+        if(data.resetFromServer){
+          history.push({
+            pathname: '/main',
+          });
+          return;
+        }
+        if (data.doorClosedBeforeDetectorFires) {
+          setDoorClosedBeforeDetectorFires(true);
+          return;
+        }
         console.log("box state refreshed");
         refreshBoxState();
       }
@@ -118,7 +130,7 @@ const RentingProcessScreen = ({ location, history }) => {
 
   const continueWithProcess = () => {
     const boxData = {
-      state: 0,
+      state: NEITHER_PARKING_NOT_RENTING,
       lastReservationDate: BEGIN_OF_TIMES,
       userId: null
     };
@@ -155,12 +167,20 @@ const RentingProcessScreen = ({ location, history }) => {
               stateRentingProcess={stateRentingProcess}
               noResponseFromParkingDevice={noResponseFromParkingDevice}
               continueWithProcess={continueWithProcess}
+              doorClosedBeforeDetectorFires={doorClosedBeforeDetectorFires}
             />
           </Card>
         </Row>
         <Row className='pt-3'>
           <Col>
-            {
+            {doorClosedBeforeDetectorFires ?
+              <MyMarker
+                color='blue'
+                state={null}
+                text={`${t('The door was closed before pulling out the scooter')}. ${t('Click continue to start renting again...')}.`}
+                icon={faInfoCircle}
+              />
+              :
               stateRentingProcess === RENTING_MODE_PULLING_OUT_SCOOTER_ORDER_TO_OPEN_DOOR_SENT
                 ?
                 <MyMarker
@@ -194,7 +214,7 @@ const RentingProcessScreen = ({ location, history }) => {
           </Col>
         </Row>
       </MyContainer>
-      <Footer/>
+      <Footer />
     </>
   )
 };

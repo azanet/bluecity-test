@@ -67,8 +67,8 @@
     "Pull out the scooter": "Retirar el patinet",
     "Closed box door": "Porta tancada",
     "Returning rented Scooter...": "Retornant un patinet llogat...",
-    "Introduce the scooter in the box": "Introduïu el patinet a l'aparcament",
-    "Close box door": "Tanqueu la porta",
+    "Introduce the scooter in the box": "Introduir el patinet a l'aparcament",
+    "Close box door": "Tancar la porta",
     "Parking process steps...": "Passos de l'aparcament...",
     "Open box door": "Obrir porta",
     "Taking your scooter back...": "Retirant el seu patinet...",
@@ -82,5 +82,8 @@
     "Click on Renting to search a free scooter to rent in our network": "Feu clic en Llogar per buscar un patinet lliure per llogar a la nostra xarxa",
     "Others": "Altres",
     "Accept": "Acceptar",
-    "Disclaimer": "Condicions d'\u00FAs"
+    "Disclaimer": "Condicions d'\u00FAs",
+    "The door was closed before pulling out the scooter": "Es va tancar la porta abans de retirar el patinet",
+    "Click continue to try it again...": "Feu clic en continuar per tornar-ho a intentar...",
+    "The door was closed before introducing the scooter": "Es va tancar la porta abans d'introduir el patinet"
 }

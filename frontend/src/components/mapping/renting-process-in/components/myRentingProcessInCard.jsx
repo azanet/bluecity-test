@@ -63,7 +63,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const MyRentingProcessCard = ({ parking, stateRentingProcess, continueWithProcess }) => {
+const MyRentingProcessCard = ({ parking, stateRentingProcess, continueWithProcess, doorClosedBeforeDetectorFires, continueWithWhileRenting }) => {
 
   const { id, address, name } = parking;
 
@@ -113,12 +113,12 @@ const MyRentingProcessCard = ({ parking, stateRentingProcess, continueWithProces
         <Row className='pt-2'>
           <Col>
             <MyMarker
-              color={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
+              color={doorClosedBeforeDetectorFires || stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
               state={null}
               text={t('Close box door')}
-              icon={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
+              icon={doorClosedBeforeDetectorFires || stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
             />
-            {
+            {doorClosedBeforeDetectorFires || 
               stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ?
                 <Grid
                   container
@@ -126,7 +126,7 @@ const MyRentingProcessCard = ({ parking, stateRentingProcess, continueWithProces
                   direction="column"
                 >
                   <Grid item xs={12}>
-                    <Button variant="contained" className={classes.buttons} onClick={continueWithProcess}>
+                    <Button variant="contained" className={classes.buttons} onClick={doorClosedBeforeDetectorFires? continueWithWhileRenting : continueWithProcess}>
                       {t('Continue')}
                   </Button>
                   </Grid>

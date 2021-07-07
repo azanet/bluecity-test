@@ -67,8 +67,8 @@
     "Pull out the scooter": "Retirar el patinete",
     "Closed box door": "Puerta cerrada",
     "Returning rented Scooter...": "Devolviendo un patinete alquilado...",
-    "Introduce the scooter in the box": "Introduzca el patinete en el aparcamiento",
-    "Close box door": "Cierre la puerta",
+    "Introduce the scooter in the box": "Introducir el patinete en el aparcamiento",
+    "Close box door": "Cerrar la puerta",
     "Parking process steps...": "Pasos del aparcamiento...",
     "Open box door": "Abrir puerta",
     "Taking your scooter back...": "Retirando su patinete...",
@@ -82,5 +82,8 @@
     "Click on Renting to search a free scooter to rent in our network": "Haga click en Alquilar para buscar un patinete libre para alquilar en nuestra red",
     "Others": "Otros",
     "Accept": "Aceptar",
-    "Disclaimer": "Condiciones de Uso"
+    "Disclaimer": "Condiciones de Uso",
+    "The door was closed before pulling out the scooter": "Se cerró la puerta antes de retirar el patinete",
+    "Click continue to try it again...": "Haga click en continuar para volverlo a intentar...",
+    "The door was closed before introducing the scooter": "Se cerró la puerta antes de introducir el patinete"
 }
