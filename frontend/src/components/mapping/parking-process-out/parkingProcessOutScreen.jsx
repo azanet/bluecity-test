@@ -14,6 +14,7 @@ import { MyContainer } from '../../ui/my-container';
 import MyParkingProcessOutCard from './components/myParkingProcessOutCard';
 import MyMarker from '../availability/components/myMarker';
 import { BEGIN_OF_TIMES } from '../../mapping/availability/constants/constants';
+import { getSessionDoNotShowThisAgain, setSessionDoNotShowThisAgain } from '../../../utils/common';
 
 /**
 |--------------------------------------------------
@@ -22,6 +23,16 @@ import { BEGIN_OF_TIMES } from '../../mapping/availability/constants/constants';
 */
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { Row, Col, Card } from 'react-bootstrap';
+
+import Image from 'material-ui-image'
+import Button from '@material-ui/core/Button';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
+
+import Checkbox from '@material-ui/core/Checkbox';
 
 /**
 |--------------------------------------------------
@@ -54,6 +65,10 @@ const ParkingProcessOutScreen = ({ location, history }) => {
   const [stateParkingProcess, setStateParkingProcess] = useState(NEITHER_PARKING_NOT_RENTING);
 
   const [doorClosedBeforeDetectorFires, setDoorClosedBeforeDetectorFires] = useState(false);
+
+  const [openMessageHelp, setOpenMessageHelp] = useState(false);
+
+  const [doNotShowThisAgain, setDoNotShowThisAgain] = useState(false);
 
   const continueWithProcess = () => {
     console.log("continueWithProcess")
@@ -94,6 +109,8 @@ const ParkingProcessOutScreen = ({ location, history }) => {
 
   useEffect(() => {
     refreshBoxState();
+
+    setDoNotShowThisAgain(getSessionDoNotShowThisAgain());
   }, []);
 
   useEffect(() => {
@@ -121,6 +138,23 @@ const ParkingProcessOutScreen = ({ location, history }) => {
       socketRef.current.disconnect();
     }
   }, []);
+
+  useEffect(() => {
+    if (stateParkingProcess === PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED && !doNotShowThisAgain) {
+      setTimeout(function(){
+        setOpenMessageHelp(true);
+      }, 2000);
+      return;
+    }
+  }, [stateParkingProcess]);
+
+  const handleClose = () => {
+    setOpenMessageHelp(false);
+  };
+
+  const handleChange = (event) => {
+    setSessionDoNotShowThisAgain(event.target.checked);
+  };
 
   return (
     <>
@@ -181,6 +215,36 @@ const ParkingProcessOutScreen = ({ location, history }) => {
         </Row>
       </MyContainer>
       <Footer />
+      <Dialog
+        open={openMessageHelp}
+        onClose={handleClose}
+        scroll="paper"
+        aria-labelledby="scroll-dialog-title"
+        aria-describedby="scroll-dialog-description"
+      >
+        <DialogTitle id="scroll-dialog-title">{t("The door didn't open?")}</DialogTitle>
+        <DialogContent dividers={true}>
+          <DialogContentText
+            id="scroll-dialog-description"
+          // ref={descriptionElementRef}
+          // tabIndex={-1}
+          >
+            {t("Press on the logo at the right left corner of the door to open it.")}
+            <Image src="img/doorDoNotOpen.svg" />
+          </DialogContentText>
+          <Checkbox
+            onChange={handleChange}
+            disableRipple
+            color="primary"
+            inputProps={{ 'aria-label': 'decorative checkbox' }}
+          />{t("Don't show this again")}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} color="primary">
+            Ok
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 };

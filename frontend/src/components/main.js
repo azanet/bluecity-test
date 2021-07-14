@@ -152,7 +152,6 @@ export function Main(props) {
       //It Happens when the user has nothing in a box
       //The user maybe riding on a rented scooter. Let's check it...
       ScooterDataService.getScooterWithUserId(currentUserId).then(data => {
-        console.log("vacío o no")
         if (data.data) {
           setUserState({
             state: "rented out",

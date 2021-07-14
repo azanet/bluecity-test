@@ -1,11 +1,9 @@
-//ATENTION: THIS FILE COULD/SHOULD BE MERGED WITH AvailabilityScreen.jsx IN THE FUTURE
-//          NOW IT'S JUST A WAY TO WORK IN A MORE UNDERSTANDABLE WAY
-
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import socketIOClient from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { Footer } from '../../ui/footer';
+import { getSessionDoNotShowThisAgain, setSessionDoNotShowThisAgain } from '../../../utils/common';
 
 /**
 |--------------------------------------------------
@@ -24,6 +22,16 @@ import MyMarker from '../availability/components/myMarker';
 */
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { Row, Col, Card } from 'react-bootstrap';
+
+import Image from 'material-ui-image'
+import Button from '@material-ui/core/Button';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
+
+import Checkbox from '@material-ui/core/Checkbox';
 
 /**
 |--------------------------------------------------
@@ -60,7 +68,11 @@ const RentingProcessScreen = ({ location, history }) => {
 
   const openBoxTimeout = useRef(null);
 
-  const [noResponseFromParkingDevice, setNoResposeFromParkingDevice] = useState(false);
+  const [noResponseFromParkingDevice, setNoResponseFromParkingDevice] = useState(false);
+
+  const [openMessageHelp, setOpenMessageHelp] = useState(false);
+
+  const [doNotShowThisAgain, setDoNotShowThisAgain] = useState(false);
 
   const refreshBoxState = () => {
     BoxDataService.get(boxId).then((data) => {
@@ -101,9 +113,18 @@ const RentingProcessScreen = ({ location, history }) => {
 
   useEffect(() => {
     refreshBoxState();
+
+    setDoNotShowThisAgain(getSessionDoNotShowThisAgain());
   }, []);
 
   useEffect(() => {
+    if (stateRentingProcess === RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED && !doNotShowThisAgain) {
+      setTimeout(function(){
+        setOpenMessageHelp(true);
+      }, 2000);
+      return;
+    }
+
     if (stateRentingProcess === RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED) {
       ScooterDataService.getScooterWithBoxId(boxId).then(data => {
         const scooterData = {
@@ -146,15 +167,23 @@ const RentingProcessScreen = ({ location, history }) => {
       BoxDataService.get(boxId).then(data => {
         if (data.data.state === NEITHER_PARKING_NOT_RENTING ||
           data.data.state === RENTING_MODE_PULLING_OUT_SCOOTER_ORDER_TO_OPEN_DOOR_SENT) {
-          setNoResposeFromParkingDevice(true);
+          setNoResponseFromParkingDevice(true);
         }
       })
-    }, 15000);
+    }, 5000);
 
     return () => {
       if (openBoxTimeout.current != null) clearTimeout(openBoxTimeout.current);
     }
   }, []);
+
+  const handleClose = () => {
+    setOpenMessageHelp(false);
+  };
+
+  const handleChange = (event) => {
+    setSessionDoNotShowThisAgain(event.target.checked);
+  };
 
   return (
     <>
@@ -215,6 +244,36 @@ const RentingProcessScreen = ({ location, history }) => {
         </Row>
       </MyContainer>
       <Footer />
+      <Dialog
+        open={openMessageHelp}
+        onClose={handleClose}
+        scroll="paper"
+        aria-labelledby="scroll-dialog-title"
+        aria-describedby="scroll-dialog-description"
+      >
+        <DialogTitle id="scroll-dialog-title">{t("The door didn't open?")}</DialogTitle>
+        <DialogContent dividers={true}>
+          <DialogContentText
+            id="scroll-dialog-description"
+          // ref={descriptionElementRef}
+          // tabIndex={-1}
+          >
+            {t("Press on the logo at the right left corner of the door to open it.")}
+            <Image src="img/doorDoNotOpen.svg" />
+          </DialogContentText>
+          <Checkbox
+            onChange={handleChange}
+            disableRipple
+            color="primary"
+            inputProps={{ 'aria-label': 'decorative checkbox' }}
+          />{t("Don't show this again")}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} color="primary">
+            Ok
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 };

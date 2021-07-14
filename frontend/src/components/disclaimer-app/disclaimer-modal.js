@@ -10,9 +10,19 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 
+import { makeStyles } from "@material-ui/core/styles";
+
 import { useTranslation } from 'react-i18next';
 
+const useStyles = makeStyles((theme) => ({
+  dialogContentMargins: {
+    marginLeft: "-1em",
+    marginRight: "-1em",
+  }
+}));
+
 export default function DisclaimerApp({ open, handleAccept }) {
+  const classes = useStyles();
   let history = useHistory();
   const { t } = useTranslation();
 
@@ -30,7 +40,7 @@ export default function DisclaimerApp({ open, handleAccept }) {
         aria-describedby="scroll-dialog-description"
       >
         <DialogTitle id="scroll-dialog-title">{t('Disclaimer')}</DialogTitle>
-        <DialogContent dividers={true}>
+        <DialogContent dividers={true} className={classes.dialogContentMargins}>
           <DialogContentText
             id="scroll-dialog-description"
           // ref={descriptionElementRef}

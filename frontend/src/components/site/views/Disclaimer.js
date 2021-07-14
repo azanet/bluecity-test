@@ -342,12 +342,12 @@ const Disclaimer = ({ extraMargin }) => {
             </Typography>
           </Grid>
           <Grid item sm={12}>
-            <Typography style={{ wordWrap: "break-word", display: "inline-block" }}>
-              Desde https://somosbluecity.es y en cumplimiento de la normativa legal vigente, ponemos a su disposición la información que le permita configurar su navegador/navegadores de Internet para mantener su privacidad y seguridad en relación a las cookies. Por ello, le facilitamos la información y enlaces a los sitos de soporte oficiales de los principales navegadores para que pueda decidir si desea o no aceptar el uso de cookies.<br /><br />
+            <Typography style={{ wordWrap: "break-word", display: "inline-block", overflowWrap: "break-word", wordBreak: "break-word" }} component="p">
+              Desde https://somosbluecity.es/asdfljkdsaksfj/asdlfkjasdlkf/asdfadf/adfasdf y en cumplimiento de la normativa legal vigente, ponemos a su disposición la información que le permita configurar su navegador/navegadores de Internet para mantener su privacidad y seguridad en relación a las cookies. Por ello, le facilitamos la información y enlaces a los sitos de soporte oficiales de los principales navegadores para que pueda decidir si desea o no aceptar el uso de cookies.<br /><br />
 
               Así, puede bloquear las cookies a través de las herramientas de configuración del navegador o bien puede configurar su navegador para que le avise cuando un servidor quiera guardar una cookie:
             </Typography>
-            <ul>
+            <ul style={{ wordWrap: "break-word", display: "inline-block", overflowWrap: "break-word", wordBreak: "break-word" }}>
               <li>Si utiliza Microsoft Internet Explorer, en la opción de menú Herramientas &gt; Opciones de Internet &gt; Privacidad &gt; Configuración. Para saber más visite http://windows.microsoft.com/es-es/windows-vista/block-or-allow-cookies y http://windows.microsoft.com/es-es/windows7/how-to-manage-cookies-in-internet-explorer-9</li>
               <li>Si utiliza Firefox, en la opción de menú Herramientas &gt; Opciones &gt; Privacidad &gt; Cookies. Para saber más visite http://support.mozilla.org/es/products/firefox/cookies.</li>
               <li>Si utiliza Chrome, en la sección de Opciones &gt; Opciones avanzadas &gt; Privacidad. Para saber más http://support.google.com/chrome/bin/answer.py?hl=es&answer=95647</li>
