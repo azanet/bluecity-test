@@ -86,7 +86,7 @@ export function Footer({ webDisclaimer }) {
         <Grid container>
           <Grid item xs={12}>
             <p className="text-center">
-              {webDisclaimer == "true" ?
+              {webDisclaimer === "true" ?
                 <a href="/disclaimer" className="text-white">
                   <DisclaimerLinkText />
                 </a>

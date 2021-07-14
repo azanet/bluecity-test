@@ -3,6 +3,13 @@ import PropTypes from 'prop-types';
 
 /**
 |--------------------------------------------------
+| Material UI
+|--------------------------------------------------
+*/
+import Typography from '@material-ui/core/Typography';
+
+/**
+|--------------------------------------------------
 | Libraries
 |--------------------------------------------------
 */
@@ -23,20 +30,31 @@ import { ColorMarker } from '../styled/styles';
 
 const MyMarker = ({ color, state, text, icon }) => {
 
-    return (
+  return (
+    <>
+      {icon !== null ?
         <>
-            <ColorMarker color={color} component="span">
-                <FontAwesomeIcon icon={icon} />
-            </ColorMarker> {state} {text} <br />
+          <ColorMarker color={color} component="span">
+            {/* {icon !== null ? <FontAwesomeIcon icon={icon} /> : <></>} */}
+            <FontAwesomeIcon icon={icon} />
+          </ColorMarker>{state} {text}<br />
         </>
-    )
+        :
+        <>
+        {/* <Typography style={{ fontWeight: 600 }} component="span"> */}
+            {state} {text}
+        {/* </Typography> */}
+        </>
+      }
+
+    </>
+  )
 };
 
 MyMarker.propTypes = {
-    color: PropTypes.string.isRequired,
-    state: PropTypes.number,
-    text: PropTypes.string.isRequired,
-    icon: PropTypes.object.isRequired
+  color: PropTypes.string.isRequired,
+  state: PropTypes.number,
+  text: PropTypes.string.isRequired
 };
 
 export default MyMarker;

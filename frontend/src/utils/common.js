@@ -60,6 +60,17 @@ export const getDistanceToOpenBox = () => {
   return parseInt(distance);
 }
 
+// set "do not show this again"
+export const setSessionDoNotShowThisAgain = (doNotShowThisAgain) => {
+  sessionStorage.setItem('doNotShowThisAgain', doNotShowThisAgain);
+}
+
+// return "do not show this again"
+export const getSessionDoNotShowThisAgain = () => {
+  let doNotShowThisAgain = sessionStorage.getItem('doNotShowThisAgain') || "false";
+  return doNotShowThisAgain === "true" ? true : false;
+}
+
 // Geolocation
 export const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Radius of the earth in km
