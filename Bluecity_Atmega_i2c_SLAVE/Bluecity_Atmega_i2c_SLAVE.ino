@@ -121,7 +121,7 @@ void loop()
   }
   ///////////////////////////////////////////////
 
-
+  
 
   delay(100);
 }
@@ -182,7 +182,7 @@ void receiveEvent(int howMany)
   }
 
 
-
+  
   //MIENTRAS EXISTA MENSAJE, ITERAREMOS PARA ALMACENARLO ENTERO Y TRABAJAR CON EL POSTERIORMENTE
   while(0 < Wire.available()) // loop through all but the last
   {
@@ -242,24 +242,28 @@ void reservedBox(){
   digitalWrite(reservedLed,HIGH);
   }
   
+  //1- Si la PUERTA esta ABIERTA
   if (digitalRead(doorSensor) == 1){
-
+    
+    //2A- PATINETA NO es Detectada
     if (digitalRead(scooterSensor)== 1 ){
       RESPONSEcode = "200"; //No puerta y NO patin detectados
-    }
-    else{
+    
+    }else{//2A- PATINETA SI es Detectada
       RESPONSEcode = "201"; //NO puerta y SI patin detectados
-    }
-  }
-  else{ 
+    }//2A-Fin
+    
+  }else{ //1-Si la puerta esta CERRADA 
   
-  if (digitalRead(scooterSensor)== 1 ){
-    RESPONSEcode = "210"; //SI PUERTA y NO PATIN DETECTADOS!! ==> Este cdigo seria el QUE DEBIERA SALIR SIEMPRE, lo demas supondria una alerta
-  }
-  else{
-    RESPONSEcode = "211"; //SI puerta y SI patin detectados
-  }
-  }
+    //2B-Si la PATINETA NO es Detectada
+    if (digitalRead(scooterSensor)== 1 ){
+      RESPONSEcode = "210"; //SI PUERTA y NO PATIN DETECTADOS!! ==> Este cdigo seria el QUE DEBIERA SALIR SIEMPRE, lo demas supondria una alerta
+    
+    }else{//2B-Si la PATINETA SI es Detectada
+      RESPONSEcode = "211"; //SI puerta y SI patin detectados
+    }//2B-FIN
+  
+  }//1-FIN
   
   Wire.write(RESPONSEcode.c_str());
 
@@ -274,12 +278,12 @@ void reservedBox(){
 //METODO Box OCUPADO (EL CARGADOR SE ENCENDERA CUANDO LA OCUPACION SEA HAGA EFECTIVA)
 void occupiedBox(){ 
   //LED ROJO == ENCENDIDO (SI SE OCUPA EL BOX)
-  
-  // 1- Si el codigo NO es 311, REALIZARA EL BUCLE.(si es 311, significa que ya esta OCCUPIED correctamente)
-  if (RESPONSEcode != "311" && RESPONSEcode != "350" && RESPONSEcode != "351" && RESPONSEcode != "352"){
+
+  // 1- Si el codigo NO es 311 Ni ERRORES 35X , REALIZARA EL BUCLE.(si es 311 o 35x, significa que ya esta OCCUPIED correctamente o fue occupado y ...HAY posibles PROBLEMAS!!(¿Patineta y Box Se encuentran bien?))
+  if (RESPONSEcode != "311" && RESPONSEcode.substring(0,2) != "35"){
 
     //3-Este bloque, Controla PATINETA y CIERRA PUERTA y ESTABLECE ESTADO-BOX, se ejecutara en caso de TENER un CODIGO 30X 
-     if (RESPONSEcode == "300" || RESPONSEcode == "301"){
+     if (RESPONSEcode.substring(0,2) == "30"){
       
       //4- Si la puerta no se ha cerrado, comprobara sensor patineta para indicar el estado de esta y mandar info a la WEB
       if (digitalRead(scooterSensor) == 1){
@@ -294,20 +298,16 @@ void occupiedBox(){
         closeDeadlock();
         
        if (RESPONSEcode == "301"){        
-        RESPONSEcode = "311"; 
+        RESPONSEcode = "311"; //Si Puerta, SI patin DETECTED  [ESTE ES EL CODIGO BUENO, EL QUE SIEMPRE DEBERIA SALIR] 
         digitalWrite(freeLed,LOW); 
         digitalWrite(reservedLed,LOW); 
         digitalWrite(occupiedLed,HIGH); 
         activateCharger();
       
        }else{
-        RESPONSEcode = "310";
+        RESPONSEcode = "310"; //SI puerta, NO Patineta [pasara a ser LIBERADO el BOX]
         //NO HAY PATINETA, POR LO TANTO SE LIBERARA el BOX, no puede ocuparse si no existe patineta
-    //    forceFreeBox(); //Forzando la liberacion del parking
-        digitalWrite(freeLed,HIGH); 
-        digitalWrite(reservedLed,LOW); 
-        digitalWrite(occupiedLed,LOW); 
-        command = 'A'; //ESTABLECIENDO como COMANDO la PUERTA ABIERTA con el CODIGO 310, QUE INDICARA un ERROR (se intento ocupar el box sin patienta)
+        forceFreeBox(); //Forzando la liberacion del parking
       }
       
       
@@ -322,7 +322,7 @@ void occupiedBox(){
     }//3-FIN   
 
     //2- DETERMINANDO SI SE HA ABIERTO LA PUERTA 
-    if (RESPONSEcode != "301" && RESPONSEcode !="300" && RESPONSEcode != "311" && RESPONSEcode != "310"){
+    if (RESPONSEcode.substring(0,2) != "30" && RESPONSEcode.substring(0,2) == "31"){
       
       if(doorStateChanged || RESPONSEcode == "330" ){
         RESPONSEcode= "330";//CODE= occupiedBox se ha abierto la PUERTA ,scooter no detected 
@@ -358,6 +358,8 @@ void occupiedBox(){
       //comprobando patineta (si la patineta NO es detectada)
       if (digitalRead(scooterSensor) == 1){
         RESPONSEcode = "352"; //Puerta SI Detect, patin NO detect        
+       }else{
+         RESPONSEcode = "353"; //IGUAL que 311, pero para que no escriba en la BBDD(de la Rpi) el cambio de estado
        }
       
     }
@@ -366,7 +368,7 @@ void occupiedBox(){
  //YA SEA EN puerta o patin, CORTAMOS ALIMENTACION DEL CARGADOR
  //¿MOSTRAR AL USUARIO POSIBILIDAD DE HABILITARLO BAJO SU CONSENTIMIENTO?
 
-//   if (RESPONSEcode != "311"){
+//   if (RESPONSEcode != "311" || RESPONSEcode != "353" ){
 //      deactivateCharger();
 //    }
 //######################################################################
@@ -478,7 +480,7 @@ void onLEDS(){
 //--------------------------------------
 
 //#############################
-//##FUNCIONES ON-OFF CargadorPatineta del BOX
+//##FUNCIONES ON-OFF CARGADOR-Patineta del BOX
 
 /////APAGAR Y ENCENDER EL CARGADOR
 void deactivateCharger(){
@@ -493,7 +495,7 @@ void activateCharger(){
 //----------------------------------
 
 //#############################
-//##FUNCIONES ON-OFF CorrienteCOMPLETA del BOX (Arduino continuara VIVO)
+//##FUNCIONES ON-OFF CORRIENTE-COMPLETA del BOX (Arduino continuara VIVO)
 
 /////APAGAR Y ENCENDER EL BOX COMPLETO
 void deactivateBox(){
@@ -505,6 +507,36 @@ void activateBox(){
 }
 
 
+//-----------------------------------------
+
+//#########################################
+//## FORZANDO ESTADOS DEL PARKING
+
+void forceFreeBox(){
+        //SE RESPETA el "RESPONSEcode" QUE YA TENGA ESTABLECIDO
+        digitalWrite(freeLed,HIGH); 
+        digitalWrite(reservedLed,LOW); 
+        digitalWrite(occupiedLed,LOW); 
+        command = 'A'; //ESTABLECIENDO como COMANDO 'A' == freeBOX
+}
 
 
+void forceReservedBox(){
+        //SE RESPETA el "RESPONSEcode" QUE YA TENGA ESTABLECIDO
+        digitalWrite(freeLed,LOW); 
+        digitalWrite(reservedLed,HIGH); 
+        digitalWrite(occupiedLed,LOW); 
+        command = 'B'; //ESTABLECIENDO como COMANDO 'B' == reservedBOX
+}
+
+
+void forceOccupiedBox(){
+        //SE RESPETA el "RESPONSEcode" QUE YA TENGA ESTABLECIDO
+        digitalWrite(freeLed,LOW); 
+        digitalWrite(reservedLed,LOW); 
+        digitalWrite(occupiedLed,HIGH); 
+        command = 'C'; //ESTABLECIENDO como COMANDO 'C' == occupiedBOX
+        
+        //AGREGAR el WireWrite al final de EJECUTAR ESTE METODO en caso de ser necesario
+}
 
