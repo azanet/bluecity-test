@@ -322,7 +322,7 @@ void occupiedBox(){
     }//3-FIN   
 
     //2- DETERMINANDO SI SE HA ABIERTO LA PUERTA 
-    if (RESPONSEcode.substring(0,2) != "30" && RESPONSEcode.substring(0,2) == "31"){
+    if (RESPONSEcode.substring(0,2) != "30" && RESPONSEcode.substring(0,2) != "31"){
       
       if(doorStateChanged || RESPONSEcode == "330" ){
         RESPONSEcode= "330";//CODE= occupiedBox se ha abierto la PUERTA ,scooter no detected 
