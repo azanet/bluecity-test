@@ -304,7 +304,7 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"){
         }
       
       }else{
-        openDeadlock();
+      //  openDeadlock();
         RESPONSEcode = "120"; //CODE= occupiedBox PUERTA CERRADA, SIN CAMBIOS
       }
       
