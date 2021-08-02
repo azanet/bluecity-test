@@ -246,7 +246,7 @@ async function openPlc() {
 
     const connectionStrategy = {
       initialDelay: 1000,
-      maxRetry: 1
+      maxRetry: 100
     }
     const opcuaOptions = {
       applicationName: "MyClient",
@@ -256,6 +256,19 @@ async function openPlc() {
       endpoint_must_exist: false,
     };
     client = nodeOpcua.OPCUAClient.create(opcuaOptions);
+
+    client.on("backoff", (retry, delay) =>
+      console.log(
+        "still trying to connect to ",
+        endpointUrl,
+        ": retry =",
+        retry,
+        "next attempt in ",
+        delay / 1000,
+        "seconds"
+      )
+    );
+
     const endpointUrl = process.env.PLC_OPCUA_URL;
 
     // step 1 : connect to
@@ -389,6 +402,7 @@ async function openPlc() {
 
 if (process.env.USING_WEBSOCKETS == "true") {
   openPlc();
+  console.log("openPlc() has been called!")
 }
 
 let io = null;
