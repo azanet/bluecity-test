@@ -378,7 +378,7 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"  ){
       if(doorStateChanged || RESPONSEcode == "130" ){
         RESPONSEcode= "130";//CODE= occupiedBox se ha abierto la PUERTA ,scooter no detected 
         if (RESPONSEcode == "130"){
-          RESPONSEcode = "101";//Puerta abierta + patineta no detected
+          RESPONSEcode = "101";//Puerta abierta + patineta detected
           doorStateChanged = false;
         }
       
@@ -509,6 +509,12 @@ void reservedBox(){
 void occupiedBox(){ 
   //LED ROJO == ENCENDIDO (SI SE OCUPA EL BOX)
 
+if(RESPONSEcode.substring(0,1) != "3"){
+    digitalWrite(freeLed,LOW); 
+    digitalWrite(reservedLed,LOW); 
+    digitalWrite(occupiedLed,HIGH); 
+}
+
   // 1- Si el codigo NO es 311 Ni ERRORES 35X , REALIZARA EL BUCLE.(si es 311 o 35x, significa que ya esta OCCUPIED correctamente o fue occupado y ...HAY posibles PROBLEMAS!!(¿Patineta y Box Se encuentran bien?))
   if (RESPONSEcode != "311" && RESPONSEcode.substring(0,2) != "35"){
 
@@ -529,9 +535,6 @@ void occupiedBox(){
         
        if (RESPONSEcode == "301"){        
         RESPONSEcode = "311"; //Si Puerta, SI patin DETECTED  [ESTE ES EL CODIGO BUENO, EL QUE SIEMPRE DEBERIA SALIR] 
-        digitalWrite(freeLed,LOW); 
-        digitalWrite(reservedLed,LOW); 
-        digitalWrite(occupiedLed,HIGH); 
         activateCharger();
       
        }else{
