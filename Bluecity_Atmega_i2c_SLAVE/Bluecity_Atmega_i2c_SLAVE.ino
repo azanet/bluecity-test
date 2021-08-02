@@ -23,12 +23,13 @@ String RESPONSEcode="000"; //CODIGO de ESTADO QUE SERA DEVUELTO A LA "Rpi" (3byt
 
 //ESTE COMMAND, es el codigo que RECIBIMOS DE LA "Rpi" con la accion a realizar
 char command; //COMANDO QUE SE RECIBE DESDE LA "Rpi"(I2C_Master)
+String mssg ="";
 
 boolean doorStateChanged = false; //Variable que determina si la puerta se ha abierto
 
 //TEMPORIZADOR con "MILLIS" para controlar el tiempo de apertura y cierre de la puerta
-const unsigned long intervalDoorOpened = 2000;//Tiempo minimo de apertura de puerta
-const unsigned long intervalDoorClosed = 1000; //Tiempo minimo de cierre de puerta
+ unsigned long intervalDoorOpened = 2000;//Tiempo minimo de apertura de puerta
+ unsigned long intervalDoorClosed = 1000; //Tiempo minimo de cierre de puerta
 unsigned long oldTime=0;
 unsigned long actualTime;
 boolean firstTime = true;
@@ -174,7 +175,11 @@ void requestEvent()
     deactivateBox();
     //   deactivateCharger();
     break;
-
+    
+  case 'Z':
+   setCloseDoorMillis();
+    break;
+    
   default:
     offLEDS();
     break;
@@ -192,34 +197,32 @@ void receiveEvent(int howMany)
   doorStateChanged =false; //Poniendo el estado de la puerta a falso
    firstTime = true;
    
-  String mssg=""; //Aqui guardaremos todo el mensaje que llegue del MASTER
+  mssg=""; //Aqui guardaremos todo el mensaje que llegue del MASTER
 
   if (Wire.available()){
     command = Wire.read(); // receive byte as a character
- //   Serial.println(command);    // print the character   
+    Serial.println(command);    // print the character   
   }
 
-
+ //DESECHANDO EL PRIMER CARACTER DESPUES DEL COMANDO
+ // char c = Wire.read(); // receive byte as a character
+     
   
   //MIENTRAS EXISTA MENSAJE, ITERAREMOS PARA ALMACENARLO ENTERO Y TRABAJAR CON EL POSTERIORMENTE
   while(0 < Wire.available()) // loop through all but the last
   {
 
-    ////En el caso de QUERER LEER LOS byte como CHAR 
     char c = Wire.read(); // receive byte as a character
- //   Serial.println(c);    // print the character   
-
-
     ////En el caso de QUERER LEER LOS byte como INT
-    //    int x = Wire.read() ;    // receive byte as an integer
-    //    Serial.println(x);         // print the integer
+       // int x = Wire.read() ;    // receive byte as an integer
+        //Serial.println(x);         // print the integer
 
 
     mssg+=c; //Almacenando el caracter, en el mensaje
 
   }//Fin del WHILE
 
-  //Serial.println(mssg);
+//  Serial.println(mssg);
 
   
 
@@ -695,8 +698,19 @@ void forceOccupiedBox(){
 }
 
 
+//--------------------------------------------------------------
+//#########################################
+//### FUNCIONES para ESTABLERCER delay EN REMOTO!!
+void setOpenDoorMillis(){
+  intervalDoorOpened = mssg.substring(1).toInt();
+//  Wire.write(String(intervalDoorOpened).c_str());
+}
 
-
+void setCloseDoorMillis(){
+  intervalDoorClosed = mssg.substring(1).toInt();
+//  Serial.println(intervalDoorClosed);
+//  Wire.write(String(intervalDoorClosed).c_str());
+}
 
 
 
