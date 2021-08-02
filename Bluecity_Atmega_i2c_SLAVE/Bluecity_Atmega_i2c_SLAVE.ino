@@ -55,6 +55,10 @@ String mssg =""; //MENSAJE QUE ALMACENAREMOS DEL MASTER I2C, SE UTILIZA PARA SET
 
 boolean doorStateChanged = false; //Variable que determina si la puerta se ha abierto
 
+//Configurado para PULL-UP (a la inversa) SE UTILIZARA PARA COMPROBAR ESTADO DE LOS SENDSORES
+const int DETECT = 0;
+const int NOTDETECT = 1;
+
 //TEMPORIZADOR con "MILLIS" para controlar el tiempo de apertura y cierre de la puerta
 unsigned long intervalDoorOpened = 2000;//Tiempo minimo de apertura de puerta
 unsigned long intervalDoorClosed = 1000; //Tiempo minimo de cierre de puerta
@@ -75,7 +79,7 @@ void setup()
   Wire.onRequest(requestEvent); // register event
 
     //Inicializando SERIAL PARA LECTURA DE DATOS "Debug"
-  Serial.begin(9600);           // start serial for output
+//  Serial.begin(9600);           // start serial for output
 
   //INICIALIZANDO BOX ¡¡APAGADOO!!
   pinMode(boxPower, OUTPUT); 
@@ -351,7 +355,7 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"  ){
      if (RESPONSEcode.substring(0,2) == "10"){
       
       //4- Si la puerta no se ha cerrado, comprobara sensor patineta para indicar el estado de esta y mandar info a la WEB
-      if (digitalRead(scooterSensor) == 1){
+      if (digitalRead(scooterSensor) == NOTDETECT){
         RESPONSEcode = "100"; //Puerta Abierta, NO PaTINETA
       }else{
         RESPONSEcode = "101"; // PUERTA ABIERTA, SI PATINETA
@@ -404,10 +408,10 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"  ){
     }else{//1E-SI EL PARKING SE YA CERRO DE ALGUNA MANERA 
     
     //SI PUERTA NO TECTADA (establecemos CODIGO de ERROR)
-    if (digitalRead(doorSensor) == 1){
+    if (digitalRead(doorSensor) == NOTDETECT){
       
       //comprobando patineta (si la patineta NO es detectada)
-      if (digitalRead(scooterSensor) == 1){
+      if (digitalRead(scooterSensor) == NOTDETECT){
         RESPONSEcode = "150"; //Puerta no Detect, patin NO detect        
       
        }else{ //Patineta Si es detectada
@@ -417,7 +421,7 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"  ){
     }else{//PUERTA DETECTADA
       
       //comprobando patineta (si la patineta NO es detectada)
-      if (digitalRead(scooterSensor) == 1){
+      if (digitalRead(scooterSensor) == NOTDETECT){
         RESPONSEcode = "152"; //Puerta SI Detect, patin NO detect  //IGUAL que 110, pero para que no escriba en la BBDD(de la Rpi) el cambio de estado     
        }else{
          RESPONSEcode = "153"; //Puerta SI Detect, patin SI detect 
@@ -471,10 +475,10 @@ void reservedBox(){
 }else{
 
   //1- Si la PUERTA esta ABIERTA
-  if (digitalRead(doorSensor) == 1){
+  if (digitalRead(doorSensor) == NOTDETECT){
     
     //2A- PATINETA NO es Detectada
-    if (digitalRead(scooterSensor)== 1 ){
+    if (digitalRead(scooterSensor)== NOTDETECT ){
       RESPONSEcode = "200"; //No puerta y NO patin detectados
     
     }else{//2A- PATINETA SI es Detectada
@@ -484,7 +488,7 @@ void reservedBox(){
   }else{ //1-Si la puerta esta CERRADA 
   
     //2B-Si la PATINETA NO es Detectada
-    if (digitalRead(scooterSensor)== 1 ){
+    if (digitalRead(scooterSensor)== NOTDETECT ){
       RESPONSEcode = "210"; //SI PUERTA y NO PATIN DETECTADOS!! ==> Este cdigo seria el QUE DEBIERA SALIR SIEMPRE, lo demas supondria una alerta
     
     }else{//2B-Si la PATINETA SI es Detectada
@@ -522,7 +526,7 @@ if(RESPONSEcode.substring(0,1) != "3"){
      if (RESPONSEcode.substring(0,2) == "30"){
       
       //4- Si la puerta no se ha cerrado, comprobara sensor patineta para indicar el estado de esta y mandar info a la WEB
-      if (digitalRead(scooterSensor) == 1){
+      if (digitalRead(scooterSensor) == NOTDETECT){
         RESPONSEcode = "300"; //Puerta Abierta, NO PaTINETA
       }else{
         RESPONSEcode = "301"; // PUERTA ABIERTA, SI PATINETA
@@ -569,10 +573,10 @@ if(RESPONSEcode.substring(0,1) != "3"){
  //   RESPONSEcode = "311"; //Estable, cerrado correctamente (puerta y patin detectados)
     
     //SI PUERTA NO TECTADA (establecemos CODIGO de ERROR)
-    if (digitalRead(doorSensor) == 1){
+    if (digitalRead(doorSensor) == NOTDETECT){
       
       //comprobando patineta (si la patineta NO es detectada)
-      if (digitalRead(scooterSensor) == 1){
+      if (digitalRead(scooterSensor) == NOTDETECT){
         RESPONSEcode = "350"; //Puerta no Detect, patin NO detect        
       
        }else{ //Patineta Si es detectada
@@ -583,7 +587,7 @@ if(RESPONSEcode.substring(0,1) != "3"){
     }else{//PUERTA DETECTADA
       
       //comprobando patineta (si la patineta NO es detectada)
-      if (digitalRead(scooterSensor) == 1){
+      if (digitalRead(scooterSensor) == NOTDETECT){
         RESPONSEcode = "352"; //Puerta SI Detect, patin NO detect        
        }else{
          RESPONSEcode = "353"; //IGUAL que 311, pero para que no escriba en la BBDD(de la Rpi) el cambio de estado
@@ -624,7 +628,7 @@ void doorOpen(){
   }
 
 
-  if (digitalRead(doorSensor)== 1 ){
+  if (digitalRead(doorSensor)== NOTDETECT ){
 
     if(actualTime > oldTime){
       doorStateChanged = true;
@@ -648,7 +652,7 @@ void doorClose(){
     firstTime = false;
   }
 
-  if (digitalRead(doorSensor)== 0 ){
+  if (digitalRead(doorSensor)== DETECT ){
 
     if(actualTime > oldTime){
       doorStateChanged = true;
@@ -762,10 +766,7 @@ void forceOccupiedBox(){
         digitalWrite(reservedLed,LOW); 
         digitalWrite(occupiedLed,HIGH); 
         command = 'C'; //ESTABLECIENDO como COMANDO 'C' == occupiedBOX      digitalWrite(freeLed,HIGH); 
-        digitalWrite(reservedLed,LOW); 
-        digitalWrite(occupiedLed,LOW); 
-        
-        //AGREGAR el WireWrite al final de EJECUTAR ESTE METODO en caso de ser necesario
+       //AGREGAR el WireWrite al final de EJECUTAR ESTE METODO en caso de ser necesario
 }
 
 
