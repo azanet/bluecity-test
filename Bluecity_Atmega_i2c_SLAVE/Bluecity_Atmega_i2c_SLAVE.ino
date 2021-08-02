@@ -10,31 +10,13 @@
 
 //INICIALIZANDO VARIABLES GLOBALES
 
-//############IMPORTANTES!!!!!###################################
+//############ SETEANDO PINES!!!!!###################################
 
 //ON-OFF COMPLETO DEL BOX, pero NO de arduino, asi que podremos activarlo cuando queramos
 int boxPower = 3; //ACTIVAR-DESACTIVAR CORRIENTE DEL BOX
 
 //ON-OFF del CARGADOR DEL BOX
 int chargerPower = 4; //ACTIVAR-DESACTIVAR CORRIENTE DEL CARGADOR
-
-//Este RESPONSECode, es el codigo a traves del cual sabremos el estado de nuestro BOX 
-String RESPONSEcode="000"; //CODIGO de ESTADO QUE SERA DEVUELTO A LA "Rpi" (3bytes)
-
-//ESTE COMMAND, es el codigo que RECIBIMOS DE LA "Rpi" con la accion a realizar
-char command; //COMANDO QUE SE RECIBE DESDE LA "Rpi"(I2C_Master)
-String mssg ="";
-
-boolean doorStateChanged = false; //Variable que determina si la puerta se ha abierto
-
-//TEMPORIZADOR con "MILLIS" para controlar el tiempo de apertura y cierre de la puerta
- unsigned long intervalDoorOpened = 2000;//Tiempo minimo de apertura de puerta
- unsigned long intervalDoorClosed = 1000; //Tiempo minimo de cierre de puerta
-unsigned long oldTime=0;
-unsigned long actualTime;
-boolean firstTime = true;
-//#################################################################
-
 
 //LEDS
 int freeLed = 12; //Declarando como 12 para usar nombre para referirnos al pin 12
@@ -49,7 +31,6 @@ int doorSensor = 7 ;//Sensor de presencia de la Puerta
 int scooterSensor = 6; //Sensor de presencia de la patineta
 
 
-
 ///#########################################
 //PARA MI EMULADOR FISICO, EMPLEARE UN SERVO, PARA EMULAR LA CERRADURA,
 //Y UN LED en el PIN CORRESPONDIENTE A LA CERRADURA que se encendera o apagra, 
@@ -61,8 +42,29 @@ int pos = 0;    // variable to store the servo position
 // ###########################################
 
 
+//##########ESTABLECIENDO VARIABLES GLOBALES ########################################
+
+//Este RESPONSECode, es el codigo a traves del cual sabremos el estado de nuestro BOX 
+String RESPONSEcode="000"; //CODIGO de ESTADO QUE SERA DEVUELTO A LA "Rpi" (3bytes)
+
+//ESTE COMMAND, es el codigo que RECIBIMOS DE LA "Rpi" con la accion a realizar
+char command; //COMANDO QUE SE RECIBE DESDE LA "Rpi"(I2C_Master)
+
+String mssg =""; //MENSAJE QUE ALMACENAREMOS DEL MASTER I2C, SE UTILIZA PARA SETEAR LOS "milisegundos" DE DELAYS de apertura Y cierre DE LA PEURTA
+
+boolean doorStateChanged = false; //Variable que determina si la puerta se ha abierto
+
+//TEMPORIZADOR con "MILLIS" para controlar el tiempo de apertura y cierre de la puerta
+unsigned long intervalDoorOpened = 2000;//Tiempo minimo de apertura de puerta
+unsigned long intervalDoorClosed = 1000; //Tiempo minimo de cierre de puerta
+unsigned long oldTime=0;
+unsigned long actualTime;
+boolean firstTime = true;
+//#################################################################
 
 
+
+//******************************************************************
 //DECLARANDO e INICIALIZANDO PINES, EVENTOS y OTROS
 void setup()
 {
@@ -103,9 +105,10 @@ void setup()
   myservo.attach(2);  // attaches the servo on pin 2 to the servo object
   myservo.write(0); 
 }
+//******************************************************************
 
 
-
+//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 void loop()
 {
   if (command != 'C'){
@@ -143,12 +146,19 @@ void loop()
   delay(100);
 }
 
+//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-//###############################################################
 
-
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 //FUNCION-EVENTO PARA RESPONDER AL MASTER I2C
+
+//Esta funcion, EJECUTARA lo que deba, dependiendo DEL COMANDO ENVIADO ANTERIORMENTE POR "EL MASTER i2C"
+//DEBEMOS ESTAR CONSTANTEMENTE PREGUNTANDO DESDE EL "MASTER I2C" para que se ejecuten los comandos y tengamos un flujo constante del programa
+// seria RECOMENDABLE preguntar (DESDE EL MAESTRO i2c) mas rapido (200-500ms) o mas lento(3000-5000ms) segun LA PRIORIDAD de la operacion a realizar
+//seria prioritario todo lo que conlleve cambios de estado, no seria prioritario el ESCANEO CONSTANTE del BOX para determinar el estado de los sensores estando ya FIJO en un ESTADO.
+
 // this function is registered as an event, see setup()
 void requestEvent()
 {
@@ -156,44 +166,88 @@ void requestEvent()
   switch(command){
 
   case 'A': 
-    freeBox();
+    freeBox(); //Realizar Proceso de LIBERACION del BOX
     break;
 
   case 'B': 
-    reservedBox();
+    reservedBox();//Realizar Proceso de RESERVA del BOX
     break;
 
-  case 'C':
-    occupiedBox();
+  case 'C': 
+    occupiedBox(); //Realizar Proceso de OCUPACION del BOX
     break;    
 
-  case 'R':
-    activateBox();
-    //    deactivateCharger();
+  case 'M':
+     setCloseDoorMillis();//Setear MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA CERRADA (Puerta HA SIDO DETECTADA POR EL SENSOR "n" milisegundos)
     break;
-  case 'S':
-    deactivateBox();
-    //   deactivateCharger();
+  
+  case 'N':
+    setOpenDoorMillis(); //Setear MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA ABIERTA (Puerta A DEJADO DE SER DETECTADA POR EL SENSOR "n" milisegundos)
+    break;
+    
+  case 'P':
+     activateCharger();//ACTIVAR CORRIENTE "DEL ENCHUFE PARA el CARGADOR de la Patineta DEL BOX"
+    break;
+    
+   case 'Q':
+     deactivateCharger(); //CORTAR CORRIENTE "DEL ENCHUFE PARA el CARGADOR de la Patineta DEL BOX"
+    break;
+    
+  case 'R':
+     activateBox();//ACTIVAR CORRIENTE COMPLETA DEL BOX
+    break;  
+    
+  case 'S': 
+    deactivateBox(); //CORTAR CORRIENTE COMPLETA DEL BOX (solo quedara el ATEMEGA vivo)
+    break;
+
+  case 'T': 
+    forceOccupiedBox();//Forzar a ESTADO OccupiedBOX
+    break;
+
+  case 'U':
+    forceReservedBox();//Forzar a ESTADO ReservedBOX
+    break;    
+
+  case 'V':
+     forceFreeBox(); //Forzar a ESTADO freeBOX
+    break;
+    
+  case 'W':
+     openDeadlock(); //Abrir CERRADURA
+    break;
+    
+  case 'X':
+    closeDeadlock(); //Cerrar CERRADURA
+    break;
+    
+   case 'Y':
+    onLEDS(); //Encender LOS LEDS DE ESTADO
     break;
     
   case 'Z':
-   setCloseDoorMillis();
+    offLEDS(); //Apagar LOS LEDS DE ESTADO
     break;
     
   default:
-    offLEDS();
-    break;
+    RESPONSEcode="999"; //Comando no existente
+    Wire.write(RESPONSEcode.c_str());
+    break; 
   }
-
-
+  
 }
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 //FUNCION-EVENTO PARA RECIBIR MENSAJE DEL MASTER I2C
+//En esta funcion SOLO ESCUCHAREMOS y ALMACENAREMOS lo que Nos LLEGUE del I2C MASTER
+
 // this function is registered as an event, see setup()
-void receiveEvent(int howMany)
-{
+void receiveEvent(int howMany){
+  
   doorStateChanged =false; //Poniendo el estado de la puerta a falso
    firstTime = true;
    
@@ -223,28 +277,19 @@ void receiveEvent(int howMany)
   }//Fin del WHILE
 
 //  Serial.println(mssg);
-
-  
-
-
-
-
 }
+
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
 
 ///#####################################
 //METODOS PARA TRABAJAR CON LOS BOXES
 
-
-
-//////OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOo
 //METODO Box LIBRE ()
-void freeBox(){ 
-  
-
-  
-  //LED VERDE == ENCENDIDO (SI SE LIBERA EL BOX)
+void freeBox(){  
+//LED VERDE == ENCENDIDO (SI SE LIBERA EL BOX)
 if(RESPONSEcode.substring(0,1) != "1"){
         digitalWrite(freeLed,HIGH); 
         digitalWrite(reservedLed,LOW); 
@@ -255,12 +300,10 @@ if(RESPONSEcode.substring(0,1) != "1"){
  
 if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"){ 
  RESPONSEcode = "156"; //CODIGO PARA LIBERAR EL BOX  !!SIN ABRIR LA PUERTA¡¡
-}
-
+}else{
 
   // 1- Si el codigo NO es 110 Ni ERRORES 15X , REALIZARA EL BUCLE.(si es 110 o 15x, significa que ya esta FREE correctamente o fue LIBERADO y ...HAY posibles PROBLEMAS!!(¿ Box Se encuentran bien?))
   if (RESPONSEcode.substring(0,2) != "11" && RESPONSEcode.substring(0,2) != "15"){
-
 
     //3-Este bloque, Controla PATINETA y CIERRA PUERTA y ESTABLECE ESTADO-BOX, se ejecutara en caso de TENER un CODIGO 10X 
      if (RESPONSEcode.substring(0,2) == "10"){
@@ -273,25 +316,16 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"){
       }//4-FIN
       
       //5- Si la puerta se ha cerrado CERRAR-BOX, DEPENDIENDO DE la PATINETA, el ESTADO DEL BOX pasara a OCUPPIED o FREE
-      if (doorStateChanged){  
-        
-        
+      if (doorStateChanged){               
         
        if (RESPONSEcode == "101"){        
         RESPONSEcode = "111"; //Si Puerta, SI patin DETECTED  [ESTE ES EL CODIGO MALO, CERRAREMOS LA PUERTA NADA MAS SE ABRA] EL BOX TAMBIEN QUEDA LIBERADO
-                               //Sera problema del usuario si reservan el BOX y dejan su patineta dentro
-
-
-
-            
+                                        
        }else{
         closeDeadlock();
-        RESPONSEcode = "110"; //SI puerta, NO Patineta [pasara a ser LIBERADO el BOX] EL CODIGO BUENO
-       
-
+        RESPONSEcode = "110"; //SI puerta, NO Patineta [pasara a ser LIBERADO el BOX] EL CODIGO BUENO       
       }
-      
-      
+           
     }//5-FIN     
 
     }//3-FIN   
@@ -313,7 +347,6 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"){
       
     }//2-FIN
 
-
   }else{
     //COMPROBANDO ESTADO DEL BOX
     
@@ -327,7 +360,6 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"){
       }
          
     }else{//1E-SI EL PARKING SE YA CERRO DE ALGUNA MANERA 
-
     
     //SI PUERTA NO TECTADA (establecemos CODIGO de ERROR)
     if (digitalRead(doorSensor) == 1){
@@ -339,8 +371,7 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"){
        }else{ //Patineta Si es detectada
          RESPONSEcode = "151"; //Puerta no Detect, patin SI detect 
        }
-       
-      
+          
     }else{//PUERTA DETECTADA
       
       //comprobando patineta (si la patineta NO es detectada)
@@ -351,23 +382,18 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"){
        }
       
     }
+    
+    
+    
     }//1E-FIN
     
   }//1-FIN 
-
+}
   Wire.write(RESPONSEcode.c_str());
 
 }//Fin occupiedBox
 
-
-
-
-
-
-
-
-
-
+//---------------------------
 
 //METODO Box RESERVADO
 void reservedBox(){
@@ -398,9 +424,8 @@ void reservedBox(){
   digitalWrite(freeLed,LOW); 
   digitalWrite(occupiedLed,LOW); 
   digitalWrite(reservedLed,HIGH);
-}
-
-
+  RESPONSEcode = "230"; //Si se pone en ESTE ESTADO por PRIMERA VEZ, (Cuando recibamos este, cambiaremos el estado a RESERVED en la BBDD de la Raspi)
+}else{
 
   //1- Si la PUERTA esta ABIERTA
   if (digitalRead(doorSensor) == 1){
@@ -425,18 +450,18 @@ void reservedBox(){
   
   }//1-FIN
   
+}
+
 }//FIN RESPONSEcode == "256"
   
   Wire.write(RESPONSEcode.c_str());
 
- 
-
 }//Fin reservedBox
 
 
+//------------------------------------------------
 
 
-//######***************************************************
 //METODO Box OCUPADO (EL CARGADOR SE ENCENDERA CUANDO LA OCUPACION SEA HAGA EFECTIVA)
 void occupiedBox(){ 
   //LED ROJO == ENCENDIDO (SI SE OCUPA EL BOX)
