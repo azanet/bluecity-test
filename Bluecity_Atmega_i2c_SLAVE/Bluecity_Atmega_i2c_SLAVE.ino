@@ -49,6 +49,7 @@ String RESPONSEcode="000"; //CODIGO de ESTADO QUE SERA DEVUELTO A LA "Rpi" (3byt
 
 //ESTE COMMAND, es el codigo que RECIBIMOS DE LA "Rpi" con la accion a realizar
 char command; //COMANDO QUE SE RECIBE DESDE LA "Rpi"(I2C_Master)
+char saveCommand; //RESPALDO del comando, que se sobreescribira si se recibe otro comando (es necesario para algunas cosas)
 
 String mssg =""; //MENSAJE QUE ALMACENAREMOS DEL MASTER I2C, SE UTILIZA PARA SETEAR LOS "milisegundos" DE DELAYS de apertura Y cierre DE LA PEURTA
 
@@ -175,8 +176,13 @@ void requestEvent()
 
   case 'C': 
     occupiedBox(); //Realizar Proceso de OCUPACION del BOX
-    break;    
-
+    break;  
+    
+  case 'L':
+    command = saveCommand;
+    Wire.write(RESPONSEcode.c_str());
+    break;
+    
   case 'M':
     setCloseDoorMillis();//Setear MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA CERRADA (Puerta HA SIDO DETECTADA POR EL SENSOR "n" milisegundos)
     RESPONSEcode="610"; //Seteados MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA CERRADA
@@ -253,7 +259,6 @@ void requestEvent()
     offLEDS(); //Apagar LOS LEDS DE ESTADO
     RESPONSEcode="500"; //Leds Off
     Wire.write(RESPONSEcode.c_str());
-
     break;
     
   default:
@@ -281,8 +286,12 @@ void receiveEvent(int howMany){
   mssg=""; //Aqui guardaremos todo el mensaje que llegue del MASTER
 
   if (Wire.available()){
+    
+    saveCommand = command; //GUARDAMOS UN REGISTRO DEL COMANDO ANTERIOR (Puede que sea necesario en algunos sitios para recuperar el comando anterior)
+    
     command = Wire.read(); // receive byte as a character
-    Serial.println(command);    // print the character   
+    
+//    Serial.println(command);    // print the character   
   }
 
  //DESECHANDO EL PRIMER CARACTER DESPUES DEL COMANDO
