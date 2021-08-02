@@ -178,55 +178,82 @@ void requestEvent()
     break;    
 
   case 'M':
-     setCloseDoorMillis();//Setear MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA CERRADA (Puerta HA SIDO DETECTADA POR EL SENSOR "n" milisegundos)
+    setCloseDoorMillis();//Setear MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA CERRADA (Puerta HA SIDO DETECTADA POR EL SENSOR "n" milisegundos)
+    RESPONSEcode="610"; //Seteados MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA CERRADA
+    Wire.write(RESPONSEcode.c_str());
     break;
   
   case 'N':
     setOpenDoorMillis(); //Setear MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA ABIERTA (Puerta A DEJADO DE SER DETECTADA POR EL SENSOR "n" milisegundos)
+    RESPONSEcode="600"; //Seteados MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA ABIERTA
+    Wire.write(RESPONSEcode.c_str());
     break;
     
   case 'P':
      activateCharger();//ACTIVAR CORRIENTE "DEL ENCHUFE PARA el CARGADOR de la Patineta DEL BOX"
+    RESPONSEcode="411"; //ACTIVADA CORRIENTE "DEL ENCHUFE PARA el CARGADOR de la Patineta DEL BOX" 
+    Wire.write(RESPONSEcode.c_str());
     break;
     
    case 'Q':
-     deactivateCharger(); //CORTAR CORRIENTE "DEL ENCHUFE PARA el CARGADOR de la Patineta DEL BOX"
+    deactivateCharger(); //CORTAR CORRIENTE "DEL ENCHUFE PARA el CARGADOR de la Patineta DEL BOX"
+    RESPONSEcode="410"; //CORTADA CORRIENTE "DEL ENCHUFE PARA el CARGADOR de la Patineta DEL BOX" 
+    Wire.write(RESPONSEcode.c_str());
     break;
     
   case 'R':
      activateBox();//ACTIVAR CORRIENTE COMPLETA DEL BOX
+    RESPONSEcode="401"; //ACTIVADA CORRIENTE COMPLETA DEL BOX 
+    Wire.write(RESPONSEcode.c_str());
     break;  
     
   case 'S': 
     deactivateBox(); //CORTAR CORRIENTE COMPLETA DEL BOX (solo quedara el ATEMEGA vivo)
+    RESPONSEcode="400"; //CORTADA CORRIENTE COMPLETA DEL BOX 
+    Wire.write(RESPONSEcode.c_str());
     break;
 
   case 'T': 
     forceOccupiedBox();//Forzar a ESTADO OccupiedBOX
+    RESPONSEcode="354"; //Forzado Estado OccupiedBox
+    Wire.write(RESPONSEcode.c_str());
     break;
 
   case 'U':
     forceReservedBox();//Forzar a ESTADO ReservedBOX
+    RESPONSEcode="254"; //Forzado Estado ReservedBox
+    Wire.write(RESPONSEcode.c_str());
     break;    
 
   case 'V':
      forceFreeBox(); //Forzar a ESTADO freeBOX
+    RESPONSEcode="154"; //Forzado Estado FreeBox
+    Wire.write(RESPONSEcode.c_str());
     break;
     
   case 'W':
      openDeadlock(); //Abrir CERRADURA
+    RESPONSEcode="511"; //Forzado Abrir Cerradura
+    Wire.write(RESPONSEcode.c_str());
     break;
     
   case 'X':
     closeDeadlock(); //Cerrar CERRADURA
+    RESPONSEcode="510"; //Forzado Cerrar Cerradura
+    Wire.write(RESPONSEcode.c_str());
     break;
     
    case 'Y':
     onLEDS(); //Encender LOS LEDS DE ESTADO
+    RESPONSEcode="501"; //Leds On
+    Wire.write(RESPONSEcode.c_str());    
     break;
     
   case 'Z':
     offLEDS(); //Apagar LOS LEDS DE ESTADO
+    RESPONSEcode="500"; //Leds Off
+    Wire.write(RESPONSEcode.c_str());
+
     break;
     
   default:
@@ -297,14 +324,20 @@ if(RESPONSEcode.substring(0,1) != "1"){
 }
 
 //if (RESPONSEcode.substring(0,1) == "2")
+ if (RESPONSEcode == "300"){
+    RESPONSEcode ="155";//CIERRE DE CERRADURA CON PUERTA ABIERTA, usuario intento cerrar con patineta dentro  ENVIAR A BBDD para avisar de esto
+    closeDeadlock();
+ }else{
  
-if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"){ 
+if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"  ){ 
  RESPONSEcode = "156"; //CODIGO PARA LIBERAR EL BOX  !!SIN ABRIR LA PUERTA¡¡
 }else{
 
   // 1- Si el codigo NO es 110 Ni ERRORES 15X , REALIZARA EL BUCLE.(si es 110 o 15x, significa que ya esta FREE correctamente o fue LIBERADO y ...HAY posibles PROBLEMAS!!(¿ Box Se encuentran bien?))
   if (RESPONSEcode.substring(0,2) != "11" && RESPONSEcode.substring(0,2) != "15"){
 
+    
+    
     //3-Este bloque, Controla PATINETA y CIERRA PUERTA y ESTABLECE ESTADO-BOX, se ejecutara en caso de TENER un CODIGO 10X 
      if (RESPONSEcode.substring(0,2) == "10"){
       
@@ -389,6 +422,7 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"){
     
   }//1-FIN 
 }
+ }
   Wire.write(RESPONSEcode.c_str());
 
 }//Fin occupiedBox
@@ -400,7 +434,7 @@ void reservedBox(){
 
    //Encender LED naranja
    //SI VIENE CON ERROR 111- desde el ESTADo FreeBOX()
-  if (RESPONSEcode == "111"){
+  if (RESPONSEcode == "111" || RESPONSEcode == "320" ){
     RESPONSEcode = "256";//CERRADURA ABIERTA, usuario esta intentando dejar patineta en OCCUPIED dando un mal funcionamiento del FREEBOX, al intentar cerrar el box con la patineta dentro
     //CUANDO GENERAMOS ESTE ERROR, La puerta cerradura esperara a que se abra pa puerta, para cerrarse con esta abierta y asi evitar que dejen nada dentro en el estado OCCUPIED
   }
