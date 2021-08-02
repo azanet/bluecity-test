@@ -122,6 +122,22 @@ void loop()
   ///////////////////////////////////////////////
 
   
+  //FREEBOX -- OPEN/CLOSE-DOOR_DETECTION 
+  if (RESPONSEcode == "120" || RESPONSEcode == "121" || RESPONSEcode == "111" && command == 'A'){
+    doorOpen();
+  }  
+
+  if (RESPONSEcode == "100" || RESPONSEcode == "101"  && command == 'A'){
+    doorClose();
+  }
+  ///////////////////////////////////////////////
+
+
+  //OCCUPIEDBOX -- OPEN/CLOSE-DOOR_DETECTION  FOR ERROR IN FREEBOX_CLOSING 
+  if (RESPONSEcode == "256" && command == 'B'){
+    doorOpen();
+  }
+
 
   delay(100);
 }
@@ -138,11 +154,11 @@ void requestEvent()
 
   switch(command){
 
-  case 'A':
+  case 'A': 
     freeBox();
     break;
 
-  case 'B':
+  case 'B': 
     reservedBox();
     break;
 
@@ -174,11 +190,13 @@ void requestEvent()
 void receiveEvent(int howMany)
 {
   doorStateChanged =false; //Poniendo el estado de la puerta a falso
+   firstTime = true;
+   
   String mssg=""; //Aqui guardaremos todo el mensaje que llegue del MASTER
 
   if (Wire.available()){
     command = Wire.read(); // receive byte as a character
-    Serial.println(command);    // print the character   
+ //   Serial.println(command);    // print the character   
   }
 
 
@@ -189,7 +207,7 @@ void receiveEvent(int howMany)
 
     ////En el caso de QUERER LEER LOS byte como CHAR 
     char c = Wire.read(); // receive byte as a character
-    Serial.println(c);    // print the character   
+ //   Serial.println(c);    // print the character   
 
 
     ////En el caso de QUERER LEER LOS byte como INT
@@ -201,8 +219,9 @@ void receiveEvent(int howMany)
 
   }//Fin del WHILE
 
-  Serial.println(mssg);
+  //Serial.println(mssg);
 
+  
 
 
 
@@ -214,34 +233,172 @@ void receiveEvent(int howMany)
 ///#####################################
 //METODOS PARA TRABAJAR CON LOS BOXES
 
-//METODO Box LIBRE
-void freeBox(){
-  //Encender LED verde;
-  digitalWrite(reservedLed,LOW); 
-  digitalWrite(occupiedLed,LOW); 
-  digitalWrite(freeLed,HIGH); 
-  if (digitalRead(scooterSensor)==1){
-    Wire.write("waitin");
-  }
-  else{
 
-    onLEDS();
-    Wire.write("OOK"); // respond with message of 6 bytes
-  }
-}//Fin freeBox
+
+//////OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOo
+//METODO Box LIBRE ()
+void freeBox(){ 
+  
+
+  
+  //LED VERDE == ENCENDIDO (SI SE LIBERA EL BOX)
+if(RESPONSEcode.substring(0,1) != "1"){
+        digitalWrite(freeLed,HIGH); 
+        digitalWrite(reservedLed,LOW); 
+        digitalWrite(occupiedLed,LOW); 
+}
+
+//if (RESPONSEcode.substring(0,1) == "2")
+ 
+if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"){ 
+ RESPONSEcode = "156"; //CODIGO PARA LIBERAR EL BOX  !!SIN ABRIR LA PUERTA¡¡
+}
+
+
+  // 1- Si el codigo NO es 110 Ni ERRORES 15X , REALIZARA EL BUCLE.(si es 110 o 15x, significa que ya esta FREE correctamente o fue LIBERADO y ...HAY posibles PROBLEMAS!!(¿ Box Se encuentran bien?))
+  if (RESPONSEcode.substring(0,2) != "11" && RESPONSEcode.substring(0,2) != "15"){
+
+
+    //3-Este bloque, Controla PATINETA y CIERRA PUERTA y ESTABLECE ESTADO-BOX, se ejecutara en caso de TENER un CODIGO 10X 
+     if (RESPONSEcode.substring(0,2) == "10"){
+      
+      //4- Si la puerta no se ha cerrado, comprobara sensor patineta para indicar el estado de esta y mandar info a la WEB
+      if (digitalRead(scooterSensor) == 1){
+        RESPONSEcode = "100"; //Puerta Abierta, NO PaTINETA
+      }else{
+        RESPONSEcode = "101"; // PUERTA ABIERTA, SI PATINETA
+      }//4-FIN
+      
+      //5- Si la puerta se ha cerrado CERRAR-BOX, DEPENDIENDO DE la PATINETA, el ESTADO DEL BOX pasara a OCUPPIED o FREE
+      if (doorStateChanged){  
+        
+        
+        
+       if (RESPONSEcode == "101"){        
+        RESPONSEcode = "111"; //Si Puerta, SI patin DETECTED  [ESTE ES EL CODIGO MALO, CERRAREMOS LA PUERTA NADA MAS SE ABRA] EL BOX TAMBIEN QUEDA LIBERADO
+                               //Sera problema del usuario si reservan el BOX y dejan su patineta dentro
+
+
+
+            
+       }else{
+        closeDeadlock();
+        RESPONSEcode = "110"; //SI puerta, NO Patineta [pasara a ser LIBERADO el BOX] EL CODIGO BUENO
+       
+
+      }
+      
+      
+    }//5-FIN     
+
+    }//3-FIN   
+    
+    //2- DETERMINANDO SI SE HA ABIERTO LA PUERTA 
+    if (RESPONSEcode.substring(0,2) != "10" && RESPONSEcode.substring(0,2) != "11"){
+      
+      if(doorStateChanged || RESPONSEcode == "130" ){
+        RESPONSEcode= "130";//CODE= occupiedBox se ha abierto la PUERTA ,scooter no detected 
+        if (RESPONSEcode == "130"){
+          RESPONSEcode = "101";//Puerta abierta + patineta no detected
+          doorStateChanged = false;
+        }
+      
+      }else{
+        openDeadlock();
+        RESPONSEcode = "120"; //CODE= occupiedBox PUERTA CERRADA, SIN CAMBIOS
+      }
+      
+    }//2-FIN
+
+
+  }else{
+    //COMPROBANDO ESTADO DEL BOX
+    
+    //1E-SI EL USUARIO HA INTENTADO CERRAR CON LA PATINETA DENTRO
+    if (RESPONSEcode== "111"){
+      
+      //CERRAREMOS LA CERRADURA nada mas que la PUERTA SE ABRA, EL BOX QUEDAR DISPONIBLE PERO CON LA PUERTA ABIERTA
+      if (doorStateChanged ){
+         RESPONSEcode ="155";//CIERRE DE CERRADURA CON PUERTA ABIERTA, usuario intento cerrar con patineta dentro  ENVIAR A BBDD para avisar de esto
+         closeDeadlock();
+      }
+         
+    }else{//1E-SI EL PARKING SE YA CERRO DE ALGUNA MANERA 
+
+    
+    //SI PUERTA NO TECTADA (establecemos CODIGO de ERROR)
+    if (digitalRead(doorSensor) == 1){
+      
+      //comprobando patineta (si la patineta NO es detectada)
+      if (digitalRead(scooterSensor) == 1){
+        RESPONSEcode = "150"; //Puerta no Detect, patin NO detect        
+      
+       }else{ //Patineta Si es detectada
+         RESPONSEcode = "151"; //Puerta no Detect, patin SI detect 
+       }
+       
+      
+    }else{//PUERTA DETECTADA
+      
+      //comprobando patineta (si la patineta NO es detectada)
+      if (digitalRead(scooterSensor) == 1){
+        RESPONSEcode = "152"; //Puerta SI Detect, patin NO detect  //IGUAL que 110, pero para que no escriba en la BBDD(de la Rpi) el cambio de estado     
+       }else{
+         RESPONSEcode = "153"; //Puerta SI Detect, patin SI detect 
+       }
+      
+    }
+    }//1E-FIN
+    
+  }//1-FIN 
+
+  Wire.write(RESPONSEcode.c_str());
+
+}//Fin occupiedBox
+
+
+
+
+
+
+
+
+
 
 
 //METODO Box RESERVADO
 void reservedBox(){
 
-  if (RESPONSEcode.substring(0,1) != "2"){
-   //Encender LED naranja;
-  closeDeadlock(); //Cerramos la cerradura  
+   //Encender LED naranja
+   //SI VIENE CON ERROR 111- desde el ESTADo FreeBOX()
+  if (RESPONSEcode == "111"){
+    RESPONSEcode = "256";//CERRADURA ABIERTA, usuario esta intentando dejar patineta en OCCUPIED dando un mal funcionamiento del FREEBOX, al intentar cerrar el box con la patineta dentro
+    //CUANDO GENERAMOS ESTE ERROR, La puerta cerradura esperara a que se abra pa puerta, para cerrarse con esta abierta y asi evitar que dejen nada dentro en el estado OCCUPIED
+  }
+  
+  
+  if (RESPONSEcode == "256"){
+      //CERRAREMOS LA CERRADURA nada mas que la PUERTA SE ABRA, EL BOX QUEDAR DISPONIBLE PERO CON LA PUERTA ABIERTA
+            digitalWrite(freeLed,LOW); 
+           digitalWrite(occupiedLed,LOW); 
+           digitalWrite(reservedLed,HIGH);
+      if (doorStateChanged){
+         RESPONSEcode ="255";//CIERRE DE CERRADURA CON PUERTA ABIERTA, usuario en FreeBox intento cerrar con patineta dentro o dejar inutilizado este 
+         closeDeadlock();
+
+      }
+    
+  }else{
+ 
+  if(RESPONSEcode.substring(0,1) != "2") { 
+   closeDeadlock(); //Cerramos la cerradura 
   digitalWrite(freeLed,LOW); 
   digitalWrite(occupiedLed,LOW); 
   digitalWrite(reservedLed,HIGH);
-  }
-  
+}
+
+
+
   //1- Si la PUERTA esta ABIERTA
   if (digitalRead(doorSensor) == 1){
     
@@ -264,6 +421,8 @@ void reservedBox(){
     }//2B-FIN
   
   }//1-FIN
+  
+}//FIN RESPONSEcode == "256"
   
   Wire.write(RESPONSEcode.c_str());
 
@@ -313,13 +472,7 @@ void occupiedBox(){
       
     }//5-FIN     
 
-    }else{    
-      
-      if (RESPONSEcode == "330"){
-        RESPONSEcode = "310"; 
-      }
-      
-    }//3-FIN   
+    }  //3-FIN   
 
     //2- DETERMINANDO SI SE HA ABIERTO LA PUERTA 
     if (RESPONSEcode.substring(0,2) != "30" && RESPONSEcode.substring(0,2) != "31"){
@@ -339,7 +492,7 @@ void occupiedBox(){
 
   }else{
     //COMPROBANDO ESTADO DEL BOX
-    RESPONSEcode = "311"; //Estable, cerrado correctamente (puerta y patin detectados)
+ //   RESPONSEcode = "311"; //Estable, cerrado correctamente (puerta y patin detectados)
     
     //SI PUERTA NO TECTADA (establecemos CODIGO de ERROR)
     if (digitalRead(doorSensor) == 1){
@@ -404,8 +557,7 @@ void doorOpen(){
       firstTime = true;
     }
 
-  }
-  else{
+  }else{
     doorStateChanged = false;
     oldTime= actualTime+intervalDoorOpened;
   }
@@ -535,8 +687,17 @@ void forceOccupiedBox(){
         digitalWrite(freeLed,LOW); 
         digitalWrite(reservedLed,LOW); 
         digitalWrite(occupiedLed,HIGH); 
-        command = 'C'; //ESTABLECIENDO como COMANDO 'C' == occupiedBOX
+        command = 'C'; //ESTABLECIENDO como COMANDO 'C' == occupiedBOX      digitalWrite(freeLed,HIGH); 
+        digitalWrite(reservedLed,LOW); 
+        digitalWrite(occupiedLed,LOW); 
         
         //AGREGAR el WireWrite al final de EJECUTAR ESTE METODO en caso de ser necesario
 }
+
+
+
+
+
+
+
 
