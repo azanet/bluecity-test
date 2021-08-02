@@ -1,5 +1,23 @@
 require('dotenv').config();
 
+const winston = require('winston');
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  defaultMeta: { service: 'user-service' },
+  transports: [
+    //
+    // - Write all logs with level `error` and below to `error.log`
+    // - Write all logs with level `info` and below to `combined.log`
+    //
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+  ],
+});
+
+logger.log('info', `booting at ${new Date().toString()}`);
+
 const fs = require("fs");
 
 const express = require('express');
@@ -274,6 +292,7 @@ async function openPlc() {
     // step 1 : connect to
     await client.connect(endpointUrl);
     console.log("connected !");
+    logger.log('info', `connected at ${new Date().toString()}`);
 
     // step 2 : createSession
     session = await client.createSession();
