@@ -12,26 +12,26 @@
 
 //############ SETEANDO PINES!!!!!###################################
 //Direccion I2C del BOX (ADDRESS_BOX) del BOX
-const int ADDRESS_BOX= 15;
+const int ADDRESS_BOX= 3;
 
-//ON-OFF COMPLETO DEL BOX, pero NO de arduino, asi que podremos activarlo cuando queramos
-int boxPower = 3; //ACTIVAR-DESACTIVAR CORRIENTE DEL BOX
-
-//ON-OFF del CARGADOR DEL BOX
-int chargerPower = 4; //ACTIVAR-DESACTIVAR CORRIENTE DEL CARGADOR
-
-//LEDS
-int freeLed = 12; //Declarando como 12 para usar nombre para referirnos al pin 12
-int reservedLed = 11; //Declarando como 11 para usar nombre para referirnos al pin 11
-int occupiedLed = 10; //Declarando como 10 para usar nombre para referirnos al pin 10
-
-//CERRADURA
-int deadlock = 9; //Cerradura
 
 //SENSORES
-int doorSensor = 7 ;//Sensor de presencia de la Puerta
-int scooterSensor = 6; //Sensor de presencia de la patineta
+int scooterSensor = A3; //Sensor de presencia de la patineta
+int doorSensor = A2 ;//Sensor de presencia de la Puerta
 
+//ON-OFF COMPLETO DEL BOX, pero NO de arduino, asi que podremos activarlo cuando queramos
+int boxPower = A1; //ACTIVAR-DESACTIVAR CORRIENTE DEL BOX
+
+//ON-OFF del CARGADOR DEL BOX
+int chargerPower = A0; //ACTIVAR-DESACTIVAR CORRIENTE DEL CARGADOR
+
+//CERRADURA
+int deadlock = 13; //Cerradura
+
+//LEDS
+int occupiedLed = 12; //Declarando como 10 para usar nombre para referirnos al pin 10
+int reservedLed = 11; //Declarando como 11 para usar nombre para referirnos al pin 11
+int freeLed = 10; //Declarando como 12 para usar nombre para referirnos al pin 12
 
 ///#########################################
 //PARA MI EMULADOR FISICO, EMPLEARE UN SERVO, PARA EMULAR LA CERRADURA,
@@ -109,7 +109,7 @@ void setup()
 
 
   //####DEFINIENDO SERVOMOTOR
-  myservo.attach(2);  // attaches the servo on pin 2 to the servo object
+  myservo.attach(9);  // attaches the servo on pin 9 to the servo object
   myservo.write(0); 
 }
 //******************************************************************
