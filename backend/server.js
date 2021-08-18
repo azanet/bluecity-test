@@ -772,7 +772,7 @@ io.on("connect", (socket) => {
 
     if (data.reservation != null && data.reservation == false) {
       console.log("unreserve-box sent")
-      io.sockets.emit('unreserve-box', { boxId: data.box_id, parkingId: data.parking_changed });
+      io.sockets.emit('unreserve-box', { boxId: data.box_id, parkingId: data.parking_changed, scooterPullingIn: false });
     }
 
     io.sockets.emit('refresh', data);

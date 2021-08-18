@@ -161,12 +161,20 @@ function wsConnectAtmega() {
     
         connection.on('message', function(message) {
             console.log("Received: '" + message.utf8Data + "'");
-            readFromAtmega(message);
+            
+            if (message.utf8Data == "welcome"){
+              console.log("Connected to Raspberry");
+            //  writeToAtmega();
+            }else{
+              
+              console.log(message.utf8Data);
+              readFromAtmega(message);
+            }
+        
+            
         });
         
     });  
-        
-     
     websocketClient.connect("ws://127.0.0.1:1880/ws");
 }
 
@@ -194,29 +202,50 @@ async function closePLC() {
 
 ///////ATMEGA FUNCTIONS__NEW___
 async function writeToAtmega(boxId, openBox, closeBox, reserve, scooterPullingIn){
-  
-// if (werewr){
-// }
-    
+     
+   if(reserve == true){
+      myConnection.send(`{"address": "${boxId}", "command":"B"}`);
    
-  myConnection.send("lalalala");
-   myConnection.send(`{"address": "${boxId}", "command":"A"}`);
+   }else if(scooterPullingIn == true){
+      myConnection.send(`{"address": "${boxId}", "command":"C"}`);
+  
+   }else if(scooterPullingIn == false){
+      myConnection.send(`{"address": "${boxId}", "command":"A"}`);
+
+   }
+ 
 }
 
+let socketClient= null;
 function readFromAtmega(message){
  
     let newDataFromPLC = message;
-
-    let boxIdInBackend = 0;
+    let lastDataFromPLC =[0,0,0];
+     boxIdInBackend = 0;
     for (let i = 0; i < 3; i++) {
       boxIdInBackend = i + 1 + (parkingId - 1) * 3;
 
-      if (lastDataFromPLC[i].openBoxConfirmed != newDataFromPLC[i].openBoxConfirmed) {
-        if (newDataFromPLC[i].openBoxConfirmed == 1) {
 
+
+if (message.utf8Data == "100"){
+  socketClient.emit("open-box-confirmed", { boxId: boxIdInBackend, parkingId }); 
+} else if (message.utf8Data == "200"){
+  socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId }); 
+  }else if (message.utf8Data == "300"){
+    socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
+  }else if (message.utf8Data == "400"){
+  socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
+      
+  }
+  
+  
+   //   if (lastDataFromPLC[i].openBoxConfirmed != newDataFromPLC[i].openBoxConfirmed) {
+     //   if (newDataFromPLC[i].openBoxConfirmed == 1) {
+if (false) {
+  if (false) {
           console.log("se emite open-box-confirmed")
-          socketClient.emit("open-box-confirmed", { boxId: boxIdInBackend, parkingId });
-
+          socketClient.emit("open-box-confirmed", { boxId: boxIdInBackend, parkingId });          
+             
           //Inform PLC that confirmation was received
           //const boxId = i;
           //const openBox = false;
@@ -234,18 +263,21 @@ function readFromAtmega(message){
           //const reserveBox = null;
           //await writeToPLC(boxId, openBox, closeBox, reserveBox);
         }
-        lastDataFromPLC[i].openBoxConfirmed = newDataFromPLC[i].openBoxConfirmed;
+       // lastDataFromPLC[i].openBoxConfirmed = newDataFromPLC[i].openBoxConfirmed;
+        
       }
 
-      if (lastDataFromPLC[i].detector != newDataFromPLC[i].detector) { 
-        if (newDataFromPLC[i].detector == 1) {
+      //if (lastDataFromPLC[i].detector != newDataFromPLC[i].detector) { 
+        //if (newDataFromPLC[i].detector == 1) {
+          if (false) {
+            if (false) {
           console.log("se emite charger-plugged-in")
           socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
         } else {
           console.log("se emite charger-unplugged")
           socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
         }
-        lastDataFromPLC[i].detector = newDataFromPLC[i].detector;
+      //  lastDataFromPLC[i].detector = newDataFromPLC[i].detector;
       }
 
     }
@@ -254,7 +286,7 @@ function readFromAtmega(message){
 
 function openAtmega(){
 
-    let socketClient = ioClient(process.env.BACKEND_URL, {
+    socketClient = ioClient(process.env.BACKEND_URL, {
     withCredentials: true,
     transports: ['polling', 'websocket'],
 //    ca: fs.readFileSync(".cert/certificate.ca.crt")
@@ -277,6 +309,7 @@ function openAtmega(){
       const closeBox = false;
       const reserveBox = false;
       const scooterPullingIn = data.scooterPullingIn;
+
       //await writeToPLC(boxIdInPLC, openBox); 
       await writeToAtmega(boxIdInPLC, openBox, closeBox, reserveBox, scooterPullingIn); 
     }
@@ -311,7 +344,7 @@ function openAtmega(){
       const openBox = false;
       const closeBox = false;
       const reserveBox = false;
-      const scooterPullingIn = null;
+      const scooterPullingIn = data.scooterPullingIn;
       await writeToAtmega(boxIdInPLC, openBox, closeBox, reserveBox, scooterPullingIn);
     }
   });
@@ -625,6 +658,8 @@ if (process.env.USING_WEBSOCKETS == "true") {
   }
 
   if (process.env.USING_ATMEGA == "true") {
+    openAtmega();
+     console.log("openAtmega() has been called!")
     wsConnectAtmega();
     console.log("wsConnectAtmega() has been called!")
   }
