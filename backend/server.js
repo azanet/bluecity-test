@@ -388,22 +388,22 @@ io.on("connect", (socket) => {
 
     socket.on("open-box-parking-in", (data) => {
       // to box device
-      io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId });
+      io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: true });
     });
 
     socket.on("open-box-parking-out", (data) => {
       // to box device
-      io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId });
+      io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false });
     });
 
     socket.on("open-box-renting-in", (data) => {
       // to box device
-      io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId });
+      io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: true });
     });
 
     socket.on("open-box-renting-out", (data) => {
       // to box device
-      io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId });
+      io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false });
     });
 
     // socket.on("reserve-box", (data) => {

@@ -31,7 +31,13 @@ const axios = require('axios');
 
 // USING_WEBSOCKETS to connect to backend
 const ioClient = require("socket.io-client");
+
+// USING ONLY FOR PLC COMUNICATION
 const nodeOpcua = require('node-opcua');
+
+// USING_ATMEGA to connect to backend
+const WebSocketClient = require('websocket').client;
+let websocketClient = null;
 
 const cors = require('cors');
 
@@ -90,7 +96,7 @@ let plcCurrentData = [{
 
 let ioUsingPLC = null;
 
-if (process.env.USING_PLC == "false") {
+if (process.env.USING_BOX_SIMULATOR_FRONTEND == "true" && process.env.USING_WEBSOCKETS == "true") {
   ioUsingPLC = socketIo(server, {
     cors: {
       // origin: process.env.BLUECITY_CLIENT,
@@ -121,6 +127,54 @@ if (process.env.USING_PLC == "false") {
   });
 }
 
+
+/////////CHATARRAAAAA
+let myConnection = null;
+
+function wsConnectAtmega() {  
+    // Connect to WebSocket server
+    console.log("Try connect to WS_Server_Rpi");
+    websocketClient = new WebSocketClient();
+     console.log("pass declaration Websocket");
+     
+     
+    websocketClient.on('connectFailed', function(error) {
+        console.log('Connect Error: ' + error.toString());
+    });
+    
+    websocketClient.on('connect', function(connection) {
+        myConnection = connection;
+        console.log('WebSocket Client Connected');
+        connection.send('{"connected":"hello"}');
+       
+        
+        connection.on('error', function(error) {
+            console.log("Connection Error: " + error.toString());
+        });
+        
+        connection.on('close', function() {
+            console.log('echo-protocol Connection Closed');
+            setTimeout(function () {
+                wsConnectAtmega()
+            }, 2000);
+        });
+    
+        connection.on('message', function(message) {
+            console.log("Received: '" + message.utf8Data + "'");
+            readFromAtmega(message);
+        });
+        
+    });  
+        
+     
+    websocketClient.connect("ws://127.0.0.1:1880/ws");
+}
+
+///////
+
+
+
+
 let parkingId = process.env.PLC_PARKING_ID;
 let session = null;
 let client = null;
@@ -134,6 +188,150 @@ async function closePLC() {
     await client.disconnect();
   }
 }
+
+
+
+
+///////ATMEGA FUNCTIONS__NEW___
+async function writeToAtmega(boxId, openBox, closeBox, reserve, scooterPullingIn){
+  
+// if (werewr){
+// }
+    
+   
+  myConnection.send("lalalala");
+   myConnection.send(`{"address": "${boxId}", "command":"A"}`);
+}
+
+function readFromAtmega(message){
+ 
+    let newDataFromPLC = message;
+
+    let boxIdInBackend = 0;
+    for (let i = 0; i < 3; i++) {
+      boxIdInBackend = i + 1 + (parkingId - 1) * 3;
+
+      if (lastDataFromPLC[i].openBoxConfirmed != newDataFromPLC[i].openBoxConfirmed) {
+        if (newDataFromPLC[i].openBoxConfirmed == 1) {
+
+          console.log("se emite open-box-confirmed")
+          socketClient.emit("open-box-confirmed", { boxId: boxIdInBackend, parkingId });
+
+          //Inform PLC that confirmation was received
+          //const boxId = i;
+          //const openBox = false;
+          //const closeBox = null;
+          //const reserveBox = null;
+          //await writeToPLC(boxId, openBox, closeBox, reserveBox);
+        } else {
+          console.log("se emite box-closed")
+          socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId });
+
+          //Inform PLC that confirmation was received
+          //const boxId = i;
+          //const openBox = null;
+          //const closeBox = false;
+          //const reserveBox = null;
+          //await writeToPLC(boxId, openBox, closeBox, reserveBox);
+        }
+        lastDataFromPLC[i].openBoxConfirmed = newDataFromPLC[i].openBoxConfirmed;
+      }
+
+      if (lastDataFromPLC[i].detector != newDataFromPLC[i].detector) { 
+        if (newDataFromPLC[i].detector == 1) {
+          console.log("se emite charger-plugged-in")
+          socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
+        } else {
+          console.log("se emite charger-unplugged")
+          socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
+        }
+        lastDataFromPLC[i].detector = newDataFromPLC[i].detector;
+      }
+
+    }
+ 
+ }
+
+function openAtmega(){
+
+    let socketClient = ioClient(process.env.BACKEND_URL, {
+    withCredentials: true,
+    transports: ['polling', 'websocket'],
+//    ca: fs.readFileSync(".cert/certificate.ca.crt")
+  });
+
+  socketClient.on("welcome", async (data) => {
+    console.log("welcome received from backend")
+  });
+
+  socketClient.on("open-box", async (data) => {
+    // from backend
+    console.log(`open-box received for Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+
+    if (parkingId == data.parkingId) {
+      // to PLC 
+
+      // BoxId in PLC always start with 1. It's assumed that all parkings have 3 boxes.
+      const boxIdInPLC = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
+      const openBox = true;
+      const closeBox = false;
+      const reserveBox = false;
+      const scooterPullingIn = data.scooterPullingIn;
+      //await writeToPLC(boxIdInPLC, openBox); 
+      await writeToAtmega(boxIdInPLC, openBox, closeBox, reserveBox, scooterPullingIn); 
+    }
+  });
+
+  socketClient.on("reserve-box", async (data) => {
+    // from backend
+    console.log(`reserve-box received for Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+
+    if (parkingId == data.parkingId) {
+      // to PLC 
+
+      // BoxId in PLC always start with 1. It's assumed that all parkings have 3 boxes.
+      const boxIdInPLC = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
+      const openBox = false;
+      const closeBox = false;
+      const reserveBox = true;
+      const scooterPullingIn = null;
+      await writeToAtmega(boxIdInPLC, openBox, closeBox, reserveBox, scooterPullingIn);
+    }
+  });
+
+  socketClient.on("unreserve-box", async (data) => {
+    // from backend
+    console.log(`unreserve-box received for Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+
+    if (parkingId == data.parkingId) {
+      // to PLC 
+
+      // BoxId in PLC always start with 1. It's assumed that all parkings have 3 boxes.
+      const boxIdInPLC = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
+      const openBox = false;
+      const closeBox = false;
+      const reserveBox = false;
+      const scooterPullingIn = null;
+      await writeToAtmega(boxIdInPLC, openBox, closeBox, reserveBox, scooterPullingIn);
+    }
+  });
+
+
+ // server.on('close', function () {
+  //  console.log(' Stopping ...');
+
+  //  closePLC();
+//  });
+  
+} 
+
+////////
+
+
+
+
+
+
 
 async function writeToPLC(boxId, openBox, closeBox, reserve) {
   console.log("writeToPLC");
@@ -306,7 +504,7 @@ async function openPlc() {
   let socketClient = ioClient(process.env.BACKEND_URL, {
     withCredentials: true,
     transports: ['polling', 'websocket'],
-    ca: fs.readFileSync(".cert/certificate.ca.crt")
+//    ca: fs.readFileSync(".cert/certificate.ca.crt")
   });
 
   socketClient.on("welcome", async (data) => {
@@ -420,12 +618,21 @@ async function openPlc() {
 }
 
 if (process.env.USING_WEBSOCKETS == "true") {
-  openPlc();
-  console.log("openPlc() has been called!")
+  
+  if (process.env.USING_PLC == "true" || process.env.USING_BOX_SIMULATOR_FRONTEND == "true") {
+    openPlc();
+    console.log("openPlc() has been called!")
+  }
+
+  if (process.env.USING_ATMEGA == "true") {
+    wsConnectAtmega();
+    console.log("wsConnectAtmega() has been called!")
+  }
 }
 
+
 let io = null;
-if (process.env.USING_WEBSOCKETS == "false") {
+if (process.env.USING_WEBSOCKETS == "false" && process.env.USING_PLC == "false") {
   io = socketIo(server, {
     cors: {
       // origin: process.env.BLUECITY_CLIENT,
