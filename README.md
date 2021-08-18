@@ -155,6 +155,15 @@ USING_WEBSOCKETS=true
 # false --> NOT using PLC but box simulator frontend simulating OPCUA
 USING_PLC=false
 
+#true --> using Atmega
+#false --> NOT using Atmega frontend simulating
+USING_ATMEGA=true
+
+#true --> using box_simulator_frontend
+#false --> NOT using PLC box_simulator_frontend
+USING_BOX_SIMULATOR_FRONTEND=false
+
+
 //Reading from PLC
 PLC_OPEN_BOX_CONFIRMED_1="Bloque de datos_2"."datos_enviar"."openboxconfirmed_1"
 PLC_OPEN_BOX_CONFIRMED_2="Bloque de datos_2"."datos_enviar"."openboxconfirmed_2"
