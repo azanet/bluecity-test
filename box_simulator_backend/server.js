@@ -37,7 +37,7 @@ const nodeOpcua = require('node-opcua');
 
 // USING_ATMEGA to connect to backend
 const WebSocketClient = require('websocket').client;
-let websocketClient = null;
+let RpiWebsocketClient = null;
 
 const cors = require('cors');
 
@@ -129,21 +129,21 @@ if (process.env.USING_BOX_SIMULATOR_FRONTEND == "true" && process.env.USING_WEBS
 
 
 /////////CHATARRAAAAA
-let myConnection = null;
+let RpiConnection = null;
 
 function wsConnectAtmega() {  
     // Connect to WebSocket server
     console.log("Try connect to WS_Server_Rpi");
-    websocketClient = new WebSocketClient();
+    RpiWebsocketClient = new WebSocketClient();
      console.log("pass declaration Websocket");
      
      
-    websocketClient.on('connectFailed', function(error) {
+    RpiWebsocketClient.on('connectFailed', function(error) {
         console.log('Connect Error: ' + error.toString());
     });
     
-    websocketClient.on('connect', function(connection) {
-        myConnection = connection;
+    RpiWebsocketClient.on('connect', function(connection) {
+        RpiConnection = connection;
         console.log('WebSocket Client Connected');
         connection.send('{"connected":"hello"}');
        
@@ -154,20 +154,20 @@ function wsConnectAtmega() {
         
         connection.on('close', function() {
             console.log('echo-protocol Connection Closed');
+            
             setTimeout(function () {
                 wsConnectAtmega()
             }, 2000);
         });
     
         connection.on('message', function(message) {
-            console.log("Received: '" + message.utf8Data + "'");
+        //    console.log("Received: '" + message.utf8Data + "'");
             
             if (message.utf8Data == "welcome"){
               console.log("Connected to Raspberry");
-            //  writeToAtmega();
             }else{
               
-              console.log(message.utf8Data);
+   //           console.log(message.utf8Data);
               readFromAtmega(message);
             }
         
@@ -175,65 +175,59 @@ function wsConnectAtmega() {
         });
         
     });  
-    websocketClient.connect("ws://127.0.0.1:1880/ws");
+    RpiWebsocketClient.connect("ws://127.0.0.1:1880/ws");
 }
 
 ///////
 
-
-
-
-let parkingId = process.env.PLC_PARKING_ID;
-let session = null;
-let client = null;
-
-async function closePLC() {
-  if (process.env.USING_PLC == "true") {
-    // close session with PL
-    await session.close();
-
-    // disconnecting from PLC
-    await client.disconnect();
-  }
-}
-
-
-
-
 ///////ATMEGA FUNCTIONS__NEW___
-async function writeToAtmega(boxId, openBox, closeBox, reserve, scooterPullingIn){
+async function writeToAtmega(boxId, reserve, scooterPullingIn){
      
    if(reserve == true){
-      myConnection.send(`{"address": "${boxId}", "command":"B"}`);
+      console.log("Sending ==> to Rpi: " + `{"address": "${boxId}", "command":"B"}`);
+      RpiConnection.send(`{"address": "${boxId}", "command":"B"}`);
    
    }else if(scooterPullingIn == true){
-      myConnection.send(`{"address": "${boxId}", "command":"C"}`);
+      console.log("Sending ==> to Rpi: " + `{"address": "${boxId}", "command":"C"}`);
+      RpiConnection.send(`{"address": "${boxId}", "command":"C"}`);
+  
   
    }else if(scooterPullingIn == false){
-      myConnection.send(`{"address": "${boxId}", "command":"A"}`);
+      console.log("Sending ==> to Rpi: " + `{"address": "${boxId}", "command":"A"}`);
+      RpiConnection.send(`{"address": "${boxId}", "command":"A"}`);
 
    }
  
 }
 
-let socketClient= null;
+
 function readFromAtmega(message){
- 
-    let newDataFromPLC = message;
+ console.log("Received <== From Rpi: " + message.utf8Data);
+    let newDataFromATMEGA = JSON.parse(message.utf8Data);
     let lastDataFromPLC =[0,0,0];
-     boxIdInBackend = 0;
-    for (let i = 0; i < 3; i++) {
-      boxIdInBackend = i + 1 + (parkingId - 1) * 3;
+    
+     boxIdInBackend = parseInt(`${newDataFromATMEGA.address}`)  + (parkingId - 1) * 3;
+   //   console.log(`${newDataFromPLC.address}`);
+    console.log(boxIdInBackend);
+  //  for (let i = 0; i < 3; i++) {
+ //     boxIdInBackend = i + 1 + (parkingId - 1) * 3;
 
 
 
-if (message.utf8Data == "100"){
+if (newDataFromATMEGA.statusCode == "100"){
+  console.log("Sending ==> to SERVER: open-box-confirmed");
   socketClient.emit("open-box-confirmed", { boxId: boxIdInBackend, parkingId }); 
-} else if (message.utf8Data == "200"){
+
+} else if (newDataFromATMEGA.statusCode == "200"){
+  console.log("Sending ==> to SERVER: box-closed");
   socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId }); 
-  }else if (message.utf8Data == "300"){
+  
+  }else if (newDataFromATMEGA.statusCode == "300"){
+    console.log("Sending ==> to SERVER:  charger-plugged-in");
     socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
-  }else if (message.utf8Data == "400"){
+ 
+  }else if (newDataFromATMEGA.statusCode == "400"){
+    console.log("Sending ==> to SERVER:  charger-unplugged");
   socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
       
   }
@@ -243,7 +237,7 @@ if (message.utf8Data == "100"){
      //   if (newDataFromPLC[i].openBoxConfirmed == 1) {
 if (false) {
   if (false) {
-          console.log("se emite open-box-confirmed")
+          console.log("Sending ==> to SERVER: open-box-confirmed")
           socketClient.emit("open-box-confirmed", { boxId: boxIdInBackend, parkingId });          
              
           //Inform PLC that confirmation was received
@@ -253,7 +247,7 @@ if (false) {
           //const reserveBox = null;
           //await writeToPLC(boxId, openBox, closeBox, reserveBox);
         } else {
-          console.log("se emite box-closed")
+          console.log("Sending ==> to SERVER: box-closed")
           socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId });
 
           //Inform PLC that confirmation was received
@@ -271,22 +265,24 @@ if (false) {
         //if (newDataFromPLC[i].detector == 1) {
           if (false) {
             if (false) {
-          console.log("se emite charger-plugged-in")
+          console.log("Sending ==> to SERVER:  charger-plugged-in")
           socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
         } else {
-          console.log("se emite charger-unplugged")
+          console.log("Sending ==> to SERVER:  charger-unplugged")
           socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
         }
       //  lastDataFromPLC[i].detector = newDataFromPLC[i].detector;
       }
 
-    }
+ //   }
  
  }
 
+let socketClient= null;
 function openAtmega(){
 
-    socketClient = ioClient(process.env.BACKEND_URL, {
+   // let socketClient = ioClient(process.env.BACKEND_URL, {
+          socketClient = ioClient(process.env.BACKEND_URL, {
     withCredentials: true,
     transports: ['polling', 'websocket'],
 //    ca: fs.readFileSync(".cert/certificate.ca.crt")
@@ -298,54 +294,46 @@ function openAtmega(){
 
   socketClient.on("open-box", async (data) => {
     // from backend
-    console.log(`open-box received for Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    console.log(`Received <== From SERVER: open-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
 
     if (parkingId == data.parkingId) {
-      // to PLC 
+      // to ATMEGA 
 
-      // BoxId in PLC always start with 1. It's assumed that all parkings have 3 boxes.
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
       const boxIdInPLC = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
-      const openBox = true;
-      const closeBox = false;
       const reserveBox = false;
       const scooterPullingIn = data.scooterPullingIn;
-
-      //await writeToPLC(boxIdInPLC, openBox); 
-      await writeToAtmega(boxIdInPLC, openBox, closeBox, reserveBox, scooterPullingIn); 
+      await writeToAtmega(boxIdInPLC, reserveBox, scooterPullingIn); 
     }
   });
 
   socketClient.on("reserve-box", async (data) => {
     // from backend
-    console.log(`reserve-box received for Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    console.log(`Received <== From SERVER: reserve-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
 
     if (parkingId == data.parkingId) {
-      // to PLC 
+      // to ATMEGA 
 
-      // BoxId in PLC always start with 1. It's assumed that all parkings have 3 boxes.
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
       const boxIdInPLC = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
-      const openBox = false;
-      const closeBox = false;
       const reserveBox = true;
       const scooterPullingIn = null;
-      await writeToAtmega(boxIdInPLC, openBox, closeBox, reserveBox, scooterPullingIn);
+      await writeToAtmega(boxIdInPLC, reserveBox, scooterPullingIn);
     }
   });
 
   socketClient.on("unreserve-box", async (data) => {
     // from backend
-    console.log(`unreserve-box received for Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    console.log(`Received <== From SERVER: unreserve-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
 
     if (parkingId == data.parkingId) {
-      // to PLC 
+      // to ATMEGA 
 
-      // BoxId in PLC always start with 1. It's assumed that all parkings have 3 boxes.
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
       const boxIdInPLC = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
-      const openBox = false;
-      const closeBox = false;
       const reserveBox = false;
       const scooterPullingIn = data.scooterPullingIn;
-      await writeToAtmega(boxIdInPLC, openBox, closeBox, reserveBox, scooterPullingIn);
+      await writeToAtmega(boxIdInPLC, reserveBox, scooterPullingIn);
     }
   });
 
@@ -358,13 +346,23 @@ function openAtmega(){
   
 } 
 
-////////
 
 
+///////////////////////CODE FOR PLC 
 
+let parkingId = process.env.PLC_PARKING_ID;
+let session = null;
+let client = null;
 
+async function closePLC() {
+  if (process.env.USING_PLC == "true") {
+    // close session with PL
+    await session.close();
 
-
+    // disconnecting from PLC
+    await client.disconnect();
+  }
+}
 
 async function writeToPLC(boxId, openBox, closeBox, reserve) {
   console.log("writeToPLC");
