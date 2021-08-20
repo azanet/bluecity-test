@@ -200,15 +200,28 @@ async function writeToAtmega(boxId, reserve, scooterPullingIn){
  
 }
 
+let lastDataFromATMEGA = new Array(121); //Creando Array de datos para 120 boxes [not use index 0]
 
 function readFromAtmega(message){
  console.log("Received <== From Rpi: " + message.utf8Data);
     let newDataFromATMEGA = JSON.parse(message.utf8Data);
-    let lastDataFromPLC =[0,0,0];
+
+//    let data[newDataFromATMEGA.address] = `${newDataFromATMEGA.statusCode}`;
     
+    lastDataFromATMEGA[newDataFromATMEGA.address]= newDataFromATMEGA.statusCode;
+    
+ //   console.log("YII: " +lastDataFromATMEGA[newDataFromATMEGA.address]);
+ 
+ //   console.log(data[2]);
+ //   data[2]= "999";
+  //   console.log(data[2]);
+     
+     
      boxIdInBackend = parseInt(`${newDataFromATMEGA.address}`)  + (parkingId - 1) * 3;
+ //    console.log(boxIdInBackend);
+ 
    //   console.log(`${newDataFromPLC.address}`);
-    console.log(boxIdInBackend);
+    
   //  for (let i = 0; i < 3; i++) {
  //     boxIdInBackend = i + 1 + (parkingId - 1) * 3;
 
@@ -281,7 +294,7 @@ if (false) {
 let socketClient= null;
 function openAtmega(){
 
-   // let socketClient = ioClient(process.env.BACKEND_URL, {
+  //  let socketClient = ioClient(process.env.BACKEND_URL, {
           socketClient = ioClient(process.env.BACKEND_URL, {
     withCredentials: true,
     transports: ['polling', 'websocket'],
@@ -292,48 +305,63 @@ function openAtmega(){
     console.log("welcome received from backend")
   });
 
+
+
+   socketClient.on("force-free-box", async (data) => {
+    // from backend
+   console.log(`\nReceived <== From SERVER: force-free-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
+    const reserveBox = false;
+    const scooterPullingIn = false;
+    await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn); 
+
+  });
+
+
+
+
   socketClient.on("open-box", async (data) => {
     // from backend
-    console.log(`Received <== From SERVER: open-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    console.log(`\nReceived <== From SERVER: open-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
 
     if (parkingId == data.parkingId) {
       // to ATMEGA 
 
       // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
-      const boxIdInPLC = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
+      const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
       const reserveBox = false;
       const scooterPullingIn = data.scooterPullingIn;
-      await writeToAtmega(boxIdInPLC, reserveBox, scooterPullingIn); 
+      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn); 
     }
   });
 
   socketClient.on("reserve-box", async (data) => {
     // from backend
-    console.log(`Received <== From SERVER: reserve-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    console.log(`\nReceived <== From SERVER: reserve-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
 
     if (parkingId == data.parkingId) {
       // to ATMEGA 
 
       // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
-      const boxIdInPLC = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
+      const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
       const reserveBox = true;
       const scooterPullingIn = null;
-      await writeToAtmega(boxIdInPLC, reserveBox, scooterPullingIn);
+      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn);
     }
   });
 
   socketClient.on("unreserve-box", async (data) => {
     // from backend
-    console.log(`Received <== From SERVER: unreserve-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    console.log(`\nReceived <== From SERVER: unreserve-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
 
     if (parkingId == data.parkingId) {
       // to ATMEGA 
 
       // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
-      const boxIdInPLC = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
+      const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
       const reserveBox = false;
       const scooterPullingIn = data.scooterPullingIn;
-      await writeToAtmega(boxIdInPLC, reserveBox, scooterPullingIn);
+      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn);
     }
   });
 
@@ -574,6 +602,8 @@ async function openPlc() {
       await writeToPLC(boxIdInPLC, openBox, closeBox, reserveBox);
     }
   });
+
+  
 
   socketClient.on("unreserve-box", async (data) => {
     // from backend

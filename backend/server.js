@@ -406,6 +406,11 @@ io.on("connect", (socket) => {
       io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false });
     });
 
+    socket.on("timeout-set-box-free", data => {
+      // to box device
+      io.sockets.emit("force-free-box", { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false });
+    });
+  
     // socket.on("reserve-box", (data) => {
     //   // to box device
     //   io.sockets.emit('reserve-box', { boxId: data.id, parkingId: data.parkingId });

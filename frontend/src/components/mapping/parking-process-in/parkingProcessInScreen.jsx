@@ -155,6 +155,11 @@ const ParkingProcessInScreen = ({ location, history }) => {
         if (data.data.state === NEITHER_PARKING_NOT_RENTING ||
           data.data.state === PARKING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT) {
           setNoResponseFromParkingDevice(true);
+          
+          ///Socket Send to Backend the "Timeout Flag" for Raspberry 
+          socketRef.current.emit('timeout-set-box-free', {id: boxId, parkingId: parking.id});
+          ///
+          
         }
       });
     }, 5000);
