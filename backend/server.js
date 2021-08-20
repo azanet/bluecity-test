@@ -389,6 +389,33 @@ io.on("connect", (socket) => {
     socket.on("open-box-parking-in", (data) => {
       // to box device
       io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId });
+
+      setTimeout(function(){
+        console.log(data.id)
+        Box.findByPk(data.id)
+        .then((data) => {
+          if (data.dataValues.state == constants.PARKING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT) {
+            Box.update({ state: constants.NEITHER_PARKING_NOT_RENTING, 
+              lastReservationDate: constants.BEGIN_OF_TIMES,
+              userId: null
+            }, {
+              where: { id: data.dataValues.id }
+            }).then(num => {
+              if (num == 1) {
+                // refresh information in mobile phones
+                io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, resetFromServer: true });
+              } else {
+                // Cannot update Box with id. Maybe Box was not found
+              }
+            }).catch(err => {
+              // Error updating Box. It should be controlled in the future.
+            });
+          }
+        })
+        .catch((err) => {
+          // Error
+        });
+      }, 10000);
     });
 
     socket.on("open-box-parking-out", (data) => {
