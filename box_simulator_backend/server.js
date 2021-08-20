@@ -306,7 +306,7 @@ async function openPlc() {
   let socketClient = ioClient(process.env.BACKEND_URL, {
     withCredentials: true,
     transports: ['polling', 'websocket'],
-    ca: fs.readFileSync(".cert/certificate.ca.crt")
+    //ca: fs.readFileSync(".cert/certificate.ca.crt")
   });
 
   socketClient.on("welcome", async (data) => {
@@ -360,6 +360,11 @@ async function openPlc() {
       const reserveBox = false;
       await writeToPLC(boxIdInPLC, openBox, closeBox, reserveBox);
     }
+  });
+
+  socketClient.on("refresh-box-state", async (data) => {
+    // from backend
+    console.log(`refresh-box-state ${data}`)
   });
 
   //It shouldn't be an interval for ever. Only when the parking process starts
