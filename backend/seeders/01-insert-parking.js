@@ -49,6 +49,22 @@ module.exports = {
         name: 'Furious Koalas',
         createdAt: new Date(),
         updatedAt: new Date()
+      },{
+        id: 7,
+        lat: '41.3603711',
+        long: '2.0611996',
+        address: 'Plaça de Can Suris, s/n, 08940 Cornellà de Llobregat',
+        name: 'Citilab',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },{
+        id: 8,
+        lat: '28.1411781',
+        long: '-15.4298421',
+        address: 'Muelle de Sta. Catalina, 35007 Las Palmas de Gran Canaria',
+        name: 'Museo Elder',
+        createdAt: new Date(),
+        updatedAt: new Date()
       }]);
     },
     down: (queryInterface, Sequelize) => {

@@ -28,6 +28,7 @@ import {
   RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED,
   RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED,
   RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED,
+  RENTING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT
 }
   from '../../constants/constants';
 
@@ -37,6 +38,7 @@ import {
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
 import { makeStyles } from "@material-ui/core/styles";
+import { CircularProgress } from '@material-ui/core';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -63,13 +65,15 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const MyRentingProcessCard = ({ parking, stateRentingProcess, continueWithProcess }) => {
+const MyRentingProcessCard = ({ parking, stateRentingProcess, continueWithProcess, doorClosedBeforeDetectorFires, continueWithWhileRenting }) => {
 
   const { id, address, name } = parking;
 
   const { t } = useTranslation();
 
   const classes = useStyles();
+
+  const percentage = 25;
 
   return (
     <>
@@ -82,57 +86,83 @@ const MyRentingProcessCard = ({ parking, stateRentingProcess, continueWithProces
         <Card.Title>{t('Returning rented Scooter...')}</Card.Title>
         <Row className='pt-2'>
           <Col>
-            <MyMarker
-              color={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ? 'green' : 'red'}
-              state={null}
-              text={t('Open box door')}
-              icon={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
-            />
+            {stateRentingProcess === RENTING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT ?
+              <Grid>
+                <CircularProgress value={percentage} size={15} text={`${percentage}%`} />
+                <MyMarker
+                  icon={null}
+                  color={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ? 'green' : 'red'}
+                  state={null}
+                  text={t('Open box door')}
+                />
+              </Grid>
+              :
+              <MyMarker
+                color={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ? 'green' : 'red'}
+                state={null}
+                text={t('Open box door')}
+                icon={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
+              />
+            }
           </Col>
         </Row>
         <Row className='pt-2'>
           <Col>
-            <MyMarker
-              color={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ? 'green' : 'red'}
-              state={null}
-              text={t('Introduce the scooter in the box')}
-              icon={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
-            />
+            {stateRentingProcess === RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ?
+              <Grid>
+                <CircularProgress value={percentage} size={15} text={`${percentage}%`} />
+                <MyMarker
+                  icon={null}
+                  color={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ? 'green' : 'red'}
+                  state={null}
+                  text={t('Introduce the scooter in the box')}
+                />
+              </Grid>
+              :
+              <MyMarker
+                color={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ? 'green' : 'red'}
+                state={null}
+                text={t('Introduce the scooter in the box')}
+                icon={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
+              />
+            }
           </Col>
         </Row>
-        {/* <Row className='pt-2'>
-          <Col>
-            <MyMarker
-              color={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ? 'green' : 'red'}
-              state={null}
-              text='Plug the charger in'
-              icon={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
-            />
-          </Col>
-        </Row> */}
         <Row className='pt-2'>
           <Col>
-            <MyMarker
-              color={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
-              state={null}
-              text={t('Close box door')}
-              icon={stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
-            />
-            {
+            {stateRentingProcess === RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED ?
+              <Grid>
+                <CircularProgress value={percentage} size={15} text={`${percentage}%`} />
+                <MyMarker
+                  icon={null}
+                  color={doorClosedBeforeDetectorFires || stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
+                  state={null}
+                  text={t('Close box door')}
+                />
+              </Grid>
+              :
+              <MyMarker
+                color={doorClosedBeforeDetectorFires || stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? 'green' : 'red'}
+                state={null}
+                text={t('Close box door')}
+                icon={doorClosedBeforeDetectorFires || stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ? faCheckCircle : faTimes}
+              />
+            }
+            {doorClosedBeforeDetectorFires ||
               stateRentingProcess >= RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED ?
-                <Grid
-                  container
-                  className={classes.buttonContainer}
-                  direction="column"
-                >
-                  <Grid item xs={12}>
-                    <Button variant="contained" className={classes.buttons} onClick={continueWithProcess}>
-                      {t('Continue')}
+              <Grid
+                container
+                className={classes.buttonContainer}
+                direction="column"
+              >
+                <Grid item xs={12}>
+                  <Button variant="contained" className={classes.buttons} onClick={doorClosedBeforeDetectorFires ? continueWithWhileRenting : continueWithProcess}>
+                    {t('Continue')}
                   </Button>
-                  </Grid>
                 </Grid>
-                :
-                <></>
+              </Grid>
+              :
+              <></>
             }
           </Col>
         </Row>

@@ -15,6 +15,7 @@ exports.create = (req, res) => {
   const box = {
     id: req.body.id,
     state: req.body.state,
+    enabled: req.body.enabled,
     occupied: req.body.occupied,
     lastReservationDate: req.body.lastReservationDate,
     userId: req.body.userId,
@@ -117,6 +118,34 @@ exports.update = (req, res) => {
       console.log(err);
       return res.status(500).send({
         message: "Error updating Box with id=" + id,
+      });
+    });
+};
+
+// reset all boxes in a parking
+exports.resetAllBoxesInAParking = (req, res) => {
+  const id = req.params.id;
+
+  const BEGIN_OF_TIMES = new Date('1970-01-01 00:00:00');
+
+  Box.update({ state: 0, occupied: false, lastReservationDate: BEGIN_OF_TIMES, userId: null }, {
+    where: { parkingId: id },
+  })
+    .then((num) => {
+      if (num >= 1) {
+        return res.send({
+          message: `${num} boxes where reseted in parking ${id}`,
+        });
+      } else {
+        return res.send({
+          message: `Cannot update any Box with parkingId=${id}. Maybe Parking was not found or req.body is empty!`,
+        });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.status(500).send({
+        message: "Error updating Boxes in parking with id=" + id,
       });
     });
 };
