@@ -222,22 +222,34 @@ function readFromAtmega(message) {
     lastDataFromATMEGA[newDataFromATMEGA.address] = newDataFromATMEGA.statusCode;
     boxIdInBackend = parseInt(`${newDataFromATMEGA.address}`) + (parkingId - 1) * 3;
 
-    if (newDataFromATMEGA.statusCode == "100") {
+    if (newDataFromATMEGA.statusCode == "302" || newDataFromATMEGA.statusCode == "102") {
       console.log("Sending ==> to SERVER: open-box-confirmed");
       socketClient.emit("open-box-confirmed", { boxId: boxIdInBackend, parkingId });
 
-    } else if (newDataFromATMEGA.statusCode == "200") {
+    } else if (newDataFromATMEGA.statusCode == "155" ) {
       console.log("Sending ==> to SERVER: box-closed");
       socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId });
 
-    } else if (newDataFromATMEGA.statusCode == "300") {
+    } else if (newDataFromATMEGA.statusCode == "301" || newDataFromATMEGA.statusCode == "101") {
       console.log("Sending ==> to SERVER:  charger-plugged-in");
       socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
 
-    } else if (newDataFromATMEGA.statusCode == "400") {
+    } else if (newDataFromATMEGA.statusCode == "300"  || newDataFromATMEGA.statusCode == "100") {
       console.log("Sending ==> to SERVER:  charger-unplugged");
       socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
-    }
+    
+    }else if (newDataFromATMEGA.statusCode == "310"  || newDataFromATMEGA.statusCode == "110") {
+      console.log("Sending ==> to SERVER:  charger-unplugged");
+      socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
+      console.log("Sending ==> to SERVER: box-closed");
+      socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId });
+    
+    }else if (newDataFromATMEGA.statusCode == "311" ) {
+      console.log("Sending ==> to SERVER:  charger-plugged-in");
+      socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
+      console.log("Sending ==> to SERVER: box-closed");
+      socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId });
+      }
 
 
   }
