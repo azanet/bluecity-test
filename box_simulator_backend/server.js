@@ -181,21 +181,26 @@ function wsConnectAtmega() {
 ///////
 
 ///////ATMEGA FUNCTIONS__NEW___
-async function writeToAtmega(boxId, reserve, scooterPullingIn){
+async function writeToAtmega(boxId, reserve, scooterPullingIn, forceState){
      
-   if(reserve == true){
-      console.log("Sending ==> to Rpi: " + `{"address": "${boxId}", "command":"B"}`);
+   if(reserve === true){
+      console.log("Sending ==> to Rpi: RESERVED_BOX" + `{"address": "${boxId}", "command":"B"}`);
       RpiConnection.send(`{"address": "${boxId}", "command":"B"}`);
    
-   }else if(scooterPullingIn == true){
-      console.log("Sending ==> to Rpi: " + `{"address": "${boxId}", "command":"C"}`);
+   }else if(scooterPullingIn === true && forceState === false ){
+      console.log("Sending ==> to Rpi: OCCUPIED_BOX" + `{"address": "${boxId}", "command":"C"}`);
       RpiConnection.send(`{"address": "${boxId}", "command":"C"}`);
   
   
-   }else if(scooterPullingIn == false){
-      console.log("Sending ==> to Rpi: " + `{"address": "${boxId}", "command":"A"}`);
+   }else if(scooterPullingIn == false ){
+      console.log("Sending ==> to Rpi: FREE_BOX" + `{"address": "${boxId}", "command":"A"}`);
       RpiConnection.send(`{"address": "${boxId}", "command":"A"}`);
 
+   }else if(scooterPullingIn === true && forceState === true ){
+      console.log("Sending ==> to Rpi: FORCE_CLOSE_DEADLOCK_BOX" + `{"address": "${boxId}", "command":"X"}`);
+      RpiConnection.send(`{"address": "${boxId}", "command":"X"}`);
+      console.log("Sending ==> to Rpi: FORCE_OCCUPIED_BOX" + `{"address": "${boxId}", "command":"T"}`);
+      RpiConnection.send(`{"address": "${boxId}", "command":"T"}`);
    }
  
 }
@@ -312,12 +317,22 @@ function openAtmega(){
    console.log(`\nReceived <== From SERVER: force-free-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
     const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
     const reserveBox = false;
-    const scooterPullingIn = false;
-    await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn); 
+    const scooterPullingIn = data.scooterPullingIn;
+    const forceState = data.forceState;
+    await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState); 
 
   });
 
+   socketClient.on("force-occupied-box", async (data) => {
+    // from backend
+   console.log(`\nReceived <== From SERVER: force-free-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
+    const reserveBox = false;
+    const scooterPullingIn = data.scooterPullingIn;
+    const forceState = data.forceState;
+    await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState); 
 
+  });
 
 
   socketClient.on("open-box", async (data) => {
@@ -331,7 +346,8 @@ function openAtmega(){
       const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
       const reserveBox = false;
       const scooterPullingIn = data.scooterPullingIn;
-      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn); 
+      const forceState = false;
+    await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
     }
   });
 
@@ -346,7 +362,8 @@ function openAtmega(){
       const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
       const reserveBox = true;
       const scooterPullingIn = null;
-      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn);
+      const forceState = false;
+    await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
     }
   });
 
@@ -361,7 +378,8 @@ function openAtmega(){
       const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
       const reserveBox = false;
       const scooterPullingIn = data.scooterPullingIn;
-      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn);
+      const forceState = false;
+    await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
     }
   });
 
