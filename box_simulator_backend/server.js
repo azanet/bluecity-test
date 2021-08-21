@@ -265,23 +265,33 @@ function openAtmega() {
   socketClient.on("force-free-box", async (data) => {
     // from backend
     console.log(`\nReceived <== From SERVER: force-free-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    
+    if (parkingId == data.parkingId) {
+      // to ATMEGA 
+
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
     const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
     const reserveBox = false;
     const scooterPullingIn = data.scooterPullingIn;
     const forceState = data.forceState;
     await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
-
+  }
   });
 
   socketClient.on("force-occupied-box", async (data) => {
     // from backend
     console.log(`\nReceived <== From SERVER: force-occupied-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+   
+    if (parkingId == data.parkingId) {
+      // to ATMEGA 
+
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
     const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
     const reserveBox = false;
     const scooterPullingIn = data.scooterPullingIn;
     const forceState = data.forceState;
     await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
-
+  }
   });
 
 
