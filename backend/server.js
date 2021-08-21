@@ -407,7 +407,7 @@ io.on("connect", (socket) => {
             if (num == 1) {
               // Send force-free-box to Raspberry
               console.log("\nTIMEOUT occurred ==> SEND to Raspberry 'force-free-box'\n");
-              io.sockets.emit("force-free-box", { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false });
+              io.sockets.emit("force-free-box", { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false, forceState: true });
    
               // refresh information in mobile phones
 //              io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, resetFromServer: true });
@@ -426,10 +426,78 @@ io.on("connect", (socket) => {
       },constants.TIMEOUT_FORCE_BOX_FREE);
     });
 
+
+
+
+
+
     socket.on("open-box-parking-out", (data) => {
       // to box device
       io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false });
+
+    //setting TIMEOUT for EXTRACT the Scooter, If not complete ==> Set BOX FREE or OCCUPIED
+    setTimeout(function(){
+      Box.findByPk(data.id)
+      .then((data) => {
+        if (data.dataValues.state === constants.PARKING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
+          data.dataValues.state === constants.PARKING_MODE_PULLING_OUT_SCOOTER_CHARGER_PULLED_OUT_CONFIRMATION_RECEIVED 
+          ) {
+          Box.update({ state: constants.NEITHER_PARKING_NOT_RENTING,
+            lastReservationDate: constants.BEGIN_OF_TIMES,
+            userId: null,
+            occupied: 0 
+          }, {
+            where: { id: data.dataValues.id }
+          }).then(num => {
+            if (num == 1) {
+              // Send force-free-box to Raspberry
+              console.log("\nTIMEOUT occurred ==> SEND to Raspberry 'force-free-box'\n");
+              io.sockets.emit("force-free-box", { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false, forceState: true});
+   
+              // refresh information in mobile phones
+              io.sockets.emit('refresh-box-state', { boxId: data.id, resetFromServer: true });
+          } else {
+              // Cannot update Box with id. Maybe Box was not found
+            }
+          }).catch(err => {
+            // Error updating Box. It should be controlled in the future.
+          });
+
+        }else if (data.dataValues.state === constants.PARKING_MODE_PULLING_OUT_SCOOTER_ORDER_TO_OPEN_DOOR_SENT
+          ) {
+          Box.update({ state: constants.PARKING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED,
+            lastReservationDate: constants.BEGIN_OF_TIMES,
+     //       userId: null,
+            occupied: 1 
+          }, {
+            where: { id: data.dataValues.id }
+          }).then(num => {
+            if (num == 1) {
+              // Send force-free-box to Raspberry
+              console.log("\nTIMEOUT occurred ==> SEND to Raspberry 'force-occupied-box'\n");
+              io.sockets.emit("force-occupied-box", { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: true, forceState: true});
+   
+              // refresh information in mobile phones
+              io.sockets.emit('refresh-box-state', {boxId: data.dataValues.id});
+          } else {
+              // Cannot update Box with id. Maybe Box was not found
+            }
+          }).catch(err => {
+            // Error updating Box. It should be controlled in the future.
+          });
+        }
+      })
+      .catch((err) => {
+        // Error
+      });
+      
+      },constants.TIMEOUT_FORCE_BOX_OCCUPIED);
     });
+
+
+
+
+
 
     socket.on("open-box-renting-in", (data) => {
       // to box device
@@ -438,9 +506,9 @@ io.on("connect", (socket) => {
     setTimeout(function(){
       Box.findByPk(data.id)
       .then((data) => {
-        if (data.dataValues.state === constants.PARKING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT||
-          data.dataValues.state === constants.PARKING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
-          data.dataValues.state === constants.PARKING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED 
+        if (data.dataValues.state === constants.RENTING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT||
+          data.dataValues.state === constants.RENTING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
+          data.dataValues.state === constants.RENTING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED 
           ) {
           Box.update({ state: constants.NEITHER_PARKING_NOT_RENTING,
             lastReservationDate: constants.BEGIN_OF_TIMES,
@@ -451,7 +519,7 @@ io.on("connect", (socket) => {
             if (num == 1) {
               // Send force-free-box to Raspberry
               console.log("\nTIMEOUT occurred ==> SEND to Raspberry 'force-free-box'\n");
-              io.sockets.emit("force-free-box", { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false });
+              io.sockets.emit("force-free-box", { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false, forceState: true });
    
               // refresh information in mobile phones
 //              io.sockets.emit('refresh-box-state', { boxId: data.dataValues.id, resetFromServer: true });
@@ -470,9 +538,69 @@ io.on("connect", (socket) => {
       },constants.TIMEOUT_FORCE_BOX_FREE);
     });
 
+
+
     socket.on("open-box-renting-out", (data) => {
       // to box device
       io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false });
+
+          //setting TIMEOUT for EXTRACT the Scooter, If not complete ==> Set BOX FREE or OCCUPIED
+    setTimeout(function(){
+      Box.findByPk(data.id)
+      .then((data) => {
+        if (data.dataValues.state === constants.RENTING_MODE_PULLING_OUT_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
+          data.dataValues.state === constants.RENTING_MODE_PULLING_OUT_SCOOTER_CHARGER_PULLED_OUT_CONFIRMATION_RECEIVED 
+          ) {
+          Box.update({ state: constants.NEITHER_PARKING_NOT_RENTING,
+            lastReservationDate: constants.BEGIN_OF_TIMES,
+            userId: null,
+            occupied: 0 
+          }, {
+            where: { id: data.dataValues.id }
+          }).then(num => {
+            if (num == 1) {
+              // Send force-free-box to Raspberry
+              console.log("\nTIMEOUT occurred ==> SEND to Raspberry 'force-free-box'\n");
+              io.sockets.emit("force-free-box", { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: false, forceState: true });
+   
+              // refresh information in mobile phones
+              io.sockets.emit('refresh-box-state', { boxId: data.id, resetFromServer: true });
+          } else {
+              // Cannot update Box with id. Maybe Box was not found
+            }
+          }).catch(err => {
+            // Error updating Box. It should be controlled in the future.
+          });
+
+        }else if (data.dataValues.state === constants.RENTING_MODE_PULLING_OUT_SCOOTER_ORDER_TO_OPEN_DOOR_SENT
+          ) {
+          Box.update({ state: constants.RENTING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED,
+            lastReservationDate: constants.BEGIN_OF_TIMES,
+     //       userId: null,
+            occupied: 1 
+          }, {
+            where: { id: data.dataValues.id }
+          }).then(num => {
+            if (num == 1) {
+              // Send force-free-box to Raspberry
+              console.log("\nTIMEOUT occurred ==> SEND to Raspberry 'force-occupied-box'\n");
+              io.sockets.emit("force-occupied-box", { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: true, forceState: true });
+   
+              // refresh information in mobile phones
+              io.sockets.emit('refresh-box-state', {boxId: data.id});
+          } else {
+              // Cannot update Box with id. Maybe Box was not found
+            }
+          }).catch(err => {
+            // Error updating Box. It should be controlled in the future.
+          });
+        }
+      })
+      .catch((err) => {
+        // Error
+      });
+      
+      },constants.TIMEOUT_FORCE_BOX_OCCUPIED);
     });
 
 //    socket.on("timeout-set-box-free", data => {
