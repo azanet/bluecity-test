@@ -560,7 +560,7 @@ if(RESPONSEcode.substring(0,1) != "3"){
       if(doorStateChanged || RESPONSEcode == "330" ){
         RESPONSEcode= "330";//CODE= occupiedBox se ha abierto la PUERTA ,scooter no detected 
         if (RESPONSEcode == "330"){
-          RESPONSEcode = "300";//Puerta abierta + patineta no detected
+          RESPONSEcode = "301";//Puerta abierta + patineta detected
           doorStateChanged = false;
         }
       
