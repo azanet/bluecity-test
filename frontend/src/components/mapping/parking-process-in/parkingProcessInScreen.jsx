@@ -46,6 +46,7 @@ import BoxDataService from '../../../services/box.service';
 |--------------------------------------------------
 */
 import {
+  TIMEOUT_FORCE_BOX_FREE,
   PARKING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT,
   PARKING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED,
   PARKING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED,
@@ -149,26 +150,27 @@ const ParkingProcessInScreen = ({ location, history }) => {
     });
   }
 
+  
   useEffect(() => {
     openBoxTimeout.current = setTimeout(function () {
       BoxDataService.get(boxId).then(data => {
         if (data.data.state === NEITHER_PARKING_NOT_RENTING ||
-          data.data.state === PARKING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT) {
+          data.data.state === PARKING_MODE_INTRODUCING_SCOOTER_ORDER_TO_OPEN_DOOR_SENT ||
+          data.data.state === PARKING_MODE_INTRODUCING_SCOOTER_DOOR_OPEN_CONFIRMATION_RECEIVED ||
+          data.data.state === PARKING_MODE_INTRODUCING_SCOOTER_CHARGER_PLUGGED_IN_CONFIRMATION_RECEIVED 
+          ) {
           setNoResponseFromParkingDevice(true);
-          
-          ///Socket Send to Backend the "Timeout Flag" for Raspberry 
-          socketRef.current.emit('timeout-set-box-free', {id: boxId, parkingId: parking.id});
-          ///
-          
         }
       });
-    }, 5000);
+    }, TIMEOUT_FORCE_BOX_FREE);
 
     return () => {
       if (openBoxTimeout.current !== null) clearTimeout(openBoxTimeout.current);
     }
   }, []);
 
+   
+  
   const handleClose = () => {
     setOpenMessageHelp(false);
   };
