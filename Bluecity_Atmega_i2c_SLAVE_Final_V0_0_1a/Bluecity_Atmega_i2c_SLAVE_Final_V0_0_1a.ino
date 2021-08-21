@@ -127,7 +127,7 @@ void loop()
     doorOpen();
   }  
 
-  if (RESPONSEcode == "300" || RESPONSEcode == "301" && command == 'C'){
+  if (RESPONSEcode == "302" || RESPONSEcode == "300" || RESPONSEcode == "301" && command == 'C'){
     doorClose();
   }
   ///////////////////////////////////////////////
@@ -138,7 +138,7 @@ void loop()
     doorOpen();
   }  
 
-  if (RESPONSEcode == "100" || RESPONSEcode == "101"  && command == 'A'){
+  if (RESPONSEcode == "102" || RESPONSEcode == "100" || RESPONSEcode == "101"  && command == 'A'){
     doorClose();
   }
   ///////////////////////////////////////////////
@@ -384,7 +384,7 @@ if (RESPONSEcode.substring(0,1) != "3" && RESPONSEcode.substring(0,1) != "1"  ){
       if(doorStateChanged || RESPONSEcode == "130" ){
         RESPONSEcode= "130";//CODE= occupiedBox se ha abierto la PUERTA ,scooter no detected 
         if (RESPONSEcode == "130"){
-          RESPONSEcode = "101";//Puerta abierta + patineta detected
+          RESPONSEcode = "102";//Puerta abierta
           doorStateChanged = false;
         }
       
@@ -560,7 +560,7 @@ if(RESPONSEcode.substring(0,1) != "3"){
       if(doorStateChanged || RESPONSEcode == "330" ){
         RESPONSEcode= "330";//CODE= occupiedBox se ha abierto la PUERTA ,scooter no detected 
         if (RESPONSEcode == "330"){
-          RESPONSEcode = "300";//Puerta abierta + patineta NOT detected
+          RESPONSEcode = "302";//Puerta abierta
           doorStateChanged = false;
         }
       
