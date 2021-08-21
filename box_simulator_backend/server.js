@@ -191,16 +191,21 @@ async function writeToAtmega(boxId, reserve, scooterPullingIn, forceState){
       console.log("Sending ==> to Rpi: OCCUPIED_BOX" + `{"address": "${boxId}", "command":"C"}`);
       RpiConnection.send(`{"address": "${boxId}", "command":"C"}`);
   
-  
-   }else if(scooterPullingIn == false ){
-      console.log("Sending ==> to Rpi: FREE_BOX" + `{"address": "${boxId}", "command":"A"}`);
-      RpiConnection.send(`{"address": "${boxId}", "command":"A"}`);
-
    }else if(scooterPullingIn === true && forceState === true ){
       console.log("Sending ==> to Rpi: FORCE_CLOSE_DEADLOCK_BOX" + `{"address": "${boxId}", "command":"X"}`);
       RpiConnection.send(`{"address": "${boxId}", "command":"X"}`);
       console.log("Sending ==> to Rpi: FORCE_OCCUPIED_BOX" + `{"address": "${boxId}", "command":"T"}`);
       RpiConnection.send(`{"address": "${boxId}", "command":"T"}`);
+  
+   }else if(scooterPullingIn == false  && forceState === false){
+      console.log("Sending ==> to Rpi: FREE_BOX" + `{"address": "${boxId}", "command":"A"}`);
+      RpiConnection.send(`{"address": "${boxId}", "command":"A"}`);
+      
+    }else if(scooterPullingIn === false && forceState === true ){
+      console.log("Sending ==> to Rpi: FORCE_CLOSE_DEADLOCK_BOX" + `{"address": "${boxId}", "command":"X"}`);
+      RpiConnection.send(`{"address": "${boxId}", "command":"X"}`);
+      console.log("Sending ==> to Rpi: FORCE_FREE_BOX" + `{"address": "${boxId}", "command":"V"}`);
+      RpiConnection.send(`{"address": "${boxId}", "command":"V"}`);
    }
  
 }
@@ -208,29 +213,14 @@ async function writeToAtmega(boxId, reserve, scooterPullingIn, forceState){
 let lastDataFromATMEGA = new Array(121); //Creando Array de datos para 120 boxes [not use index 0]
 
 function readFromAtmega(message){
- console.log("Received <== From Rpi: " + message.utf8Data);
+ 
+    console.log("Received <== From Rpi: " + message.utf8Data);
     let newDataFromATMEGA = JSON.parse(message.utf8Data);
-
-//    let data[newDataFromATMEGA.address] = `${newDataFromATMEGA.statusCode}`;
-    
-    lastDataFromATMEGA[newDataFromATMEGA.address]= newDataFromATMEGA.statusCode;
-    
- //   console.log("YII: " +lastDataFromATMEGA[newDataFromATMEGA.address]);
- 
- //   console.log(data[2]);
- //   data[2]= "999";
-  //   console.log(data[2]);
-     
-     
-     boxIdInBackend = parseInt(`${newDataFromATMEGA.address}`)  + (parkingId - 1) * 3;
- //    console.log(boxIdInBackend);
- 
-   //   console.log(`${newDataFromPLC.address}`);
-    
-  //  for (let i = 0; i < 3; i++) {
- //     boxIdInBackend = i + 1 + (parkingId - 1) * 3;
-
-
+  
+    if (lastDataFromATMEGA[newDataFromATMEGA.address] !== newDataFromATMEGA.statusCode){
+      
+      lastDataFromATMEGA[newDataFromATMEGA.address]= newDataFromATMEGA.statusCode;
+      boxIdInBackend = parseInt(`${newDataFromATMEGA.address}`)  + (parkingId - 1) * 3;
 
 if (newDataFromATMEGA.statusCode == "100"){
   console.log("Sending ==> to SERVER: open-box-confirmed");
@@ -247,52 +237,12 @@ if (newDataFromATMEGA.statusCode == "100"){
   }else if (newDataFromATMEGA.statusCode == "400"){
     console.log("Sending ==> to SERVER:  charger-unplugged");
   socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
-      
   }
   
   
-   //   if (lastDataFromPLC[i].openBoxConfirmed != newDataFromPLC[i].openBoxConfirmed) {
-     //   if (newDataFromPLC[i].openBoxConfirmed == 1) {
-if (false) {
-  if (false) {
-          console.log("Sending ==> to SERVER: open-box-confirmed")
-          socketClient.emit("open-box-confirmed", { boxId: boxIdInBackend, parkingId });          
-             
-          //Inform PLC that confirmation was received
-          //const boxId = i;
-          //const openBox = false;
-          //const closeBox = null;
-          //const reserveBox = null;
-          //await writeToPLC(boxId, openBox, closeBox, reserveBox);
-        } else {
-          console.log("Sending ==> to SERVER: box-closed")
-          socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId });
-
-          //Inform PLC that confirmation was received
-          //const boxId = i;
-          //const openBox = null;
-          //const closeBox = false;
-          //const reserveBox = null;
-          //await writeToPLC(boxId, openBox, closeBox, reserveBox);
-        }
-       // lastDataFromPLC[i].openBoxConfirmed = newDataFromPLC[i].openBoxConfirmed;
-        
-      }
-
-      //if (lastDataFromPLC[i].detector != newDataFromPLC[i].detector) { 
-        //if (newDataFromPLC[i].detector == 1) {
-          if (false) {
-            if (false) {
-          console.log("Sending ==> to SERVER:  charger-plugged-in")
-          socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
-        } else {
-          console.log("Sending ==> to SERVER:  charger-unplugged")
-          socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
-        }
-      //  lastDataFromPLC[i].detector = newDataFromPLC[i].detector;
-      }
-
- //   }
+}
+  
+  
  
  }
 
@@ -325,7 +275,7 @@ function openAtmega(){
 
    socketClient.on("force-occupied-box", async (data) => {
     // from backend
-   console.log(`\nReceived <== From SERVER: force-free-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+   console.log(`\nReceived <== From SERVER: force-occupied-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
     const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * 3;
     const reserveBox = false;
     const scooterPullingIn = data.scooterPullingIn;
