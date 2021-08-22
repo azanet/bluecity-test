@@ -380,12 +380,12 @@ const io = socketIo(server, {
 
 io.on("connect", (socket) => {
 
-  console.log("New client connected");
+  if (process.env.USING_WEBSOCKETS == "true") {
+  console.log("New client connected - USING_WEBSOCKET= TRUE");
 
   socket.emit("welcome", { connection_confirmed: true });
 
-  if (process.env.USING_WEBSOCKETS == "true") {
-
+  
     socket.on("open-box-parking-in", (data) => {
       // to box device
       io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: true });
@@ -469,7 +469,7 @@ io.on("connect", (socket) => {
             ) {
               Box.update({
                 state: constants.PARKING_MODE_INTRODUCING_SCOOTER_DOOR_CLOSED_CONFIRMATION_RECEIVED,
-                lastReservationDate: constants.BEGIN_OF_TIMES,
+        //        lastReservationDate: constants.BEGIN_OF_TIMES,
                 //       userId: null,
                 occupied: 1
               }, {
@@ -622,6 +622,7 @@ io.on("connect", (socket) => {
   }
 
   if (process.env.USING_WEBSOCKETS == "false") {
+    console.log("New client connected - USING_WEBSOCKET= FALSE");
     /* Renting pulling scooter in     -- RENTING, PULLING IN -- */
     socket.on("open-box-renting-in", (data) => {
       console.log("open-box-renting-in")
