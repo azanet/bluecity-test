@@ -45,6 +45,7 @@ app.use(express.static('data/img'));
 // database conection
 const db = require("./models");
 const { fdatasync } = require('fs');
+const { NOMEM } = require('dns');
 
 // For explotation. Database is not dropped.
 db.sequelize.sync();
@@ -385,8 +386,50 @@ io.on("connect", (socket) => {
 
   socket.emit("welcome", { connection_confirmed: true });
 
+
+  socket.on("initializing-parking-boxes", (data) => {
+  //Obtaining and RETURN to RASPBERRY the STATES from BOXES on BBDD for SET THEM
+      Box.findAll({
+        where: { parkingId: data.parkingId }
+      }).then((result) => {
+        console.log("\n");
+
+        //sending QUANTITY of EXISTING BOXES for THIS PARKING in BBDD 
+        console.log(`Initializing SET NUMBER OF [PARKING:${data.parkingId}] BOXES [quantity:${result.length}] ==> SEND to Raspberry 'set-number-of-parking-boxes'\n`);
+        io.sockets.emit("set-number-of-parking-boxes", {parkingId: data.parkingId, numberOfParkingBoxes: result.length});
+        
+        result.forEach(box => {
+          // console.log(box.id+" "+ box.enabled+" "+ box.occupied+" "+ box.userId);
+
+          if (box.enabled === false){
+            // Send force-occupied-box to Raspberry
+            console.log(`Initializing [BOX:${box.id}] of [PARKING:${box.parkingId}] as NOT ENABLED ==> SEND to Raspberry 'force-occupied-box'`);
+            io.sockets.emit("force-occupied-box", { boxId: box.id, parkingId: box.parkingId, scooterPullingIn: true, forceState: true });
+          
+          }else if (box.enabled === true && box.occupied === false && box.userId === null){
+            // Send force-free-box to Raspberry
+            console.log(`Initializing [BOX:${box.id}] of [PARKING:${box.parkingId}] as FREE ==> SEND to Raspberry 'force-free-box`);
+            io.sockets.emit("force-free-box", { boxId: box.id, parkingId: box.parkingId, scooterPullingIn: false, forceState: true });
+
+          } else if (box.enabled === true && box.occupied === false && box.userId !== null){
+            // Send force-reserve-box to Raspberry
+            console.log(`Initializing [BOX:${box.id}] of [PARKING:${box.parkingId}] as RESERVED ==> SEND to Raspberry 'force-reserve-box'`);
+            io.sockets.emit("force-reserve-box", { boxId: box.id, parkingId: box.parkingId, forceState: true });
+          
+          }else if (box.enabled === true && box.occupied === true && box.userId === null){
+            // Send force-occupied-box to Raspberry
+            console.log(`Initializing [BOX:${box.id}] of [PARKING:${box.parkingId}] as OCCUPIED ==> SEND to Raspberry 'force-occupied-box'`);
+            io.sockets.emit("force-occupied-box", { boxId: box.id, parkingId: box.parkingId, scooterPullingIn: true, forceState: true });
+          }
+        });
+        console.log("\n");
+      }).catch((err) => {
+        // Error
+      });
+  });
   
-    socket.on("open-box-parking-in", (data) => {
+
+  socket.on("open-box-parking-in", (data) => {
       // to box device
       io.sockets.emit('open-box', { boxId: data.id, parkingId: data.parkingId, scooterPullingIn: true });
 
