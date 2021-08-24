@@ -288,15 +288,13 @@ function wsConnectAtmega() {
 
 
 
-async function writeToAtmega(boxId, reserve, scooterPullingIn, forceState) {
+function writeToAtmega(boxId, reserve, scooterPullingIn, forceState) {
 
   if (reserve === true && forceState === false) {
     console.log("Sending ==> to Rpi: RESERVED_BOX" + `{"address": "${boxId}", "command":"B"}`);
     RpiConnection.send(`{"address": "${boxId}", "command":"B"}`);
 
   } else if (reserve === true && forceState === true) {
-    console.log("Sending ==> to Rpi: FORCE_CLOSE_DEADLOCK_BOX" + `{"address": "${boxId}", "command":"X"}`);
-    RpiConnection.send(`{"address": "${boxId}", "command":"X"}`);
     console.log("Sending ==> to Rpi: FORCE_RESERVED_BOX" + `{"address": "${boxId}", "command":"U"}`);
     RpiConnection.send(`{"address": "${boxId}", "command":"U"}`);
 
@@ -309,14 +307,11 @@ async function writeToAtmega(boxId, reserve, scooterPullingIn, forceState) {
     RpiConnection.send(`{"address": "${boxId}", "command":"A"}`);
     
   } else if (scooterPullingIn === true && forceState === true) {
-    console.log("Sending ==> to Rpi: FORCE_CLOSE_DEADLOCK_BOX" + `{"address": "${boxId}", "command":"X"}`);
-    RpiConnection.send(`{"address": "${boxId}", "command":"X"}`);
+
     console.log("Sending ==> to Rpi: FORCE_OCCUPIED_BOX" + `{"address": "${boxId}", "command":"T"}`);
     RpiConnection.send(`{"address": "${boxId}", "command":"T"}`);
 
   } else if (scooterPullingIn === false && forceState === true) {
-    console.log("Sending ==> to Rpi: FORCE_CLOSE_DEADLOCK_BOX" + `{"address": "${boxId}", "command":"X"}`);
-    RpiConnection.send(`{"address": "${boxId}", "command":"X"}`);
     console.log("Sending ==> to Rpi: FORCE_FREE_BOX" + `{"address": "${boxId}", "command":"V"}`);
     RpiConnection.send(`{"address": "${boxId}", "command":"V"}`);
   }
@@ -345,8 +340,7 @@ function readFromAtmega(message) {
      
    }else{
        
-   let newDataFromATMEGA = JSON.parse(message.utf8Data);
- 
+    let newDataFromATMEGA = JSON.parse(message.utf8Data);
 
     if (lastDataFromATMEGA[newDataFromATMEGA.address] !== newDataFromATMEGA.statusCode) {
 
