@@ -15,6 +15,8 @@ EJEMPLO ==> {"box_id":"15","command":"A"}, ATMEGA respondera con un RESPONSEcode
 	   B		|  	reservedBox()			|	Establece el parking como RESERVADO
 	   
 	   C		|  	occupiedBox()			|	Establece el parking como OCUPADO
+
+	   F            |					|	Se utiliza cuando el cambio de estado de realizo FORZOSAMENTE
 	   
 	   L		|  	returnResponseCode		|	Retorna el ULTIMO RESPONSEcode 
 	   

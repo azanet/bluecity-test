@@ -71,5 +71,6 @@
 "600":"Seteados MILISEGUNDOS para DELAY que determina si la puerta es ABIERTA",
 "610":"Seteados MILISEGUNDOS para DELAY que determina si la puerta es CERRADA",
 
+"900":"Cambio de estado 'forzado'",
 "999":"Se ha introducido UN Comando NO EXISTENTE"
 }
