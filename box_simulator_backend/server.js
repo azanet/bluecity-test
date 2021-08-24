@@ -338,8 +338,15 @@ function readFromAtmega(message) {
    }      
      
   }else{
+  
     
-    let newDataFromATMEGA = JSON.parse(message.utf8Data);
+   if (message.utf8Data === "NoBoxesDetected"){
+      console.log("NO SE DETECTA NINGUN BOX EN EL PARKING!!!!");
+     
+   }else{
+       
+   let newDataFromATMEGA = JSON.parse(message.utf8Data);
+ 
 
     if (lastDataFromATMEGA[newDataFromATMEGA.address] !== newDataFromATMEGA.statusCode) {
 
@@ -374,6 +381,7 @@ function readFromAtmega(message) {
         console.log("Sending ==> to SERVER: box-closed");
         socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId });
       }
+    }
     }
   }
 }
