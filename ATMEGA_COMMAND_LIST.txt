@@ -1,0 +1,48 @@
+
+//ESTA ES LA LISTA DE COMANDOS QUE TIENE PROGRAMADO NUESTRO ATMEGA
+//EL COMANDO CONSTA DE un solo 'Char', ES LO UNICO QUE HAY QUE MANDAR AL ATMEGA
+//el SERVER de la APP, envia a la Raspberry un JSON con la informacion (id_Box,comando,[milisegundos])
+//ESTE, RESPONDERA CON LOS 'RESPONSEcodes' CUANDO LE SEA SOLICITADO POR EL 'MASTER I2C' (LA RASPBERRY EN ESTE CASO)
+
+EJEMPLO ==> {"box_id":"15","command":"A"}, ATMEGA respondera con un RESPONSEcode de 3 digitos "XXX".
+			{"box_id":"15","command":"M","millis":"2000"}, ATMEGA respondera con un RESPONSEcode "610".
+
+------------------------------------------------------------------------------------------------------------
+	COMANDO  	|	FUNCION A LA QUE LLAMA	|	DEFINICION DE LA FUNCION
+------------------------------------------------------------------------------------------------------------	
+	   A		|  	freeBox()			|	Establece el parking como LIBRE
+	   
+	   B		|  	reservedBox()			|	Establece el parking como RESERVADO
+	   
+	   C		|  	occupiedBox()			|	Establece el parking como OCUPADO
+
+	   F            |					|	Se utiliza cuando el cambio de estado de realizo FORZOSAMENTE
+	   
+	   L		|  	returnResponseCode		|	Retorna el ULTIMO RESPONSEcode 
+	   
+	   M		|  	setCloseDoorMillis()		|	Setear MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA CERRADA
+	   
+	   N		|  	setOpenDoorMillis()		|	Setear MILISEGUNDOS para DELAY que determina que la puerta SE CONSIDERA ABIERTA
+	   
+	   P		|  	activateCharger()		|	ACTIVAR CORRIENTE "DEL ENCHUFE PARA el CARGADOR de la Patineta DEL BOX"
+	   
+	   Q		|  	deactivateCharger()		|	DESACTIVAR CORRIENTE "DEL ENCHUFE PARA el CARGADOR de la Patineta DEL BOX"
+	   
+	   R		|  	activateBox()			|	ACTIVAR CORRIENTE COMPLETA DEL BOX
+	   
+	   S		|  	deactivateBox()			|	CORTAR CORRIENTE COMPLETA DEL BOX
+	   
+	   T		|  	forceOccupiedBox()		|	Forzar a ESTADO OccupiedBOX
+	   
+	   U		|  	forceReservedBox()		|	Forzar a ESTADO ReservedBOX
+	   
+	   V		|      	forceFreeBox()			|	Forzar a ESTADO freeBOX
+	   
+	   W		|  	openDeadlock()			|	Abrir CERRADURA
+	   
+	   X		|  	closeDeadlock()			|	Cerrar CERRADURA
+	   
+	   Y		|  	onLEDS()			|	Encender LOS LEDS DE ESTADO
+	   
+	   Z		|  	offLEDS()			|	Apagar LOS LEDS DE ESTADO
+-----------------------------------------------------------------------------------------------------------	
