@@ -31,7 +31,12 @@ const axios = require('axios');
 
 // USING_WEBSOCKETS to connect to backend
 const ioClient = require("socket.io-client");
+
+// USING ONLY FOR PLC COMUNICATION
 const nodeOpcua = require('node-opcua');
+
+// USING_ATMEGA to connect to backend
+const WebSocketClient = require('websocket').client;
 
 const cors = require('cors');
 
@@ -53,6 +58,342 @@ server = http.createServer(app);
 app.get("/hello", (req, res) => {
   return res.send({ response: "I am alive" }).status(200);
 });
+
+//Setting PARKING ID
+const parkingId = process.env.PLC_PARKING_ID;
+
+//Set parking boxes quantity
+let parkingBoxesQuantity = null;
+
+
+
+///////////CODE FOR "RASPBERRY_ATMEGA - PARKING"
+let socketClient = null;
+let RpiWebsocketClient = null;
+let RpiConnection = null;
+let backendConnected = false;
+let atmegaConnected = false;
+let lastDataFromATMEGA = new Array(121); //Creando Array de datos para 120 boxes [not use index 0]
+
+
+if (process.env.USING_WEBSOCKETS == "true") {
+  
+  if (process.env.USING_ATMEGA == "true") {
+    openAtmega();
+    console.log("openAtmega() has been called!")
+    wsConnectAtmega();
+    console.log("wsConnectAtmega() has been called!")
+  }
+}
+
+
+function openAtmega() {
+
+    backendConnected = false;
+  //  let socketClient = ioClient(process.env.BACKEND_URL, {
+    socketClient = ioClient(process.env.BACKEND_URL, {
+    withCredentials: true,
+    transports: ['polling', 'websocket'],
+    //    ca: fs.readFileSync(".cert/certificate.ca.crt")
+  });
+
+  socketClient.on("welcome", async (data) => {
+    console.log("welcome received from backend");
+    backendConnected = true;
+    
+    if (backendConnected === true && atmegaConnected ===true){
+    console.log("\nSOLICITANDO ESTADOS DE BOXES al SERVIDOR");
+     socketClient.emit("initializing-parking-boxes", { parkingId } );  
+   }
+  });
+
+  socketClient.on("set-number-of-parking-boxes", async (data) => {
+    // from backend
+    console.log(`\nReceived <== From SERVER: set-number-of-parking-boxes in [Parking:${data.parkingId}] BOXES [quantity:${data.numberOfParkingBoxes}]`)
+    
+    if (parkingId == data.parkingId) {
+      // SET parkingBoxesQuantity (for use in algorithm) 
+      if (parseInt(data.numberOfParkingBoxes) > 0 && parseInt(data.numberOfParkingBoxes) <=120 ){
+        parkingBoxesQuantity = parseInt(data.numberOfParkingBoxes);
+      
+      }else{
+        //set Default Value 3 in case of error
+        parkingBoxesQuantity = 3;
+      }
+
+    }
+  });
+
+  socketClient.on("force-free-box", async (data) => {
+    // from backend
+    console.log(`\nReceived <== From SERVER: force-free-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    
+    if (parkingId == data.parkingId) {
+      // to ATMEGA 
+
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
+    const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * parkingBoxesQuantity;
+    const reserveBox = false;
+    const scooterPullingIn = data.scooterPullingIn;
+    const forceState = true;
+    //CLEAN lastDataFromATMEGA 
+    lastDataFromATMEGA[boxIdInATMEGA] = 0;
+    //Send data
+    await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
+  }
+  });
+  
+    socketClient.on("force-reserve-box", async (data) => {
+    // from backend
+    console.log(`\nReceived <== From SERVER: force-reserve-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+    
+    if (parkingId == data.parkingId) {
+      // to ATMEGA 
+
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
+      const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * parkingBoxesQuantity;
+      const reserveBox = true;
+      const scooterPullingIn = null;
+      const forceState = true;
+      //CLEAN lastDataFromATMEGA 
+      lastDataFromATMEGA[boxIdInATMEGA] = 0;
+      //Send data
+      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
+    }
+  });
+
+  socketClient.on("force-occupied-box", async (data) => {
+    // from backend
+    console.log(`\nReceived <== From SERVER: force-occupied-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+   
+    if (parkingId == data.parkingId) {
+      // to ATMEGA 
+
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
+      const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * parkingBoxesQuantity;
+      const reserveBox = false;
+      const scooterPullingIn = data.scooterPullingIn;
+      const forceState = true;
+      //CLEAN lastDataFromATMEGA 
+      lastDataFromATMEGA[boxIdInATMEGA] = 0;
+      //Send data
+      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
+    }
+  });
+
+
+  socketClient.on("open-box", async (data) => {
+    // from backend
+    console.log(`\nReceived <== From SERVER: open-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+
+    if (parkingId == data.parkingId) {
+      // to ATMEGA 
+
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
+      const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * parkingBoxesQuantity;
+      const reserveBox = false;
+      const scooterPullingIn = data.scooterPullingIn;
+      const forceState = false;
+      //CLEAN lastDataFromATMEGA 
+      lastDataFromATMEGA[boxIdInATMEGA] = 0;
+      //Send data
+      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
+    }
+  });
+
+  socketClient.on("reserve-box", async (data) => {
+    // from backend
+    console.log(`\nReceived <== From SERVER: reserve-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+
+    if (parkingId == data.parkingId) {
+      // to ATMEGA 
+
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
+      const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * parkingBoxesQuantity;
+      const reserveBox = true;
+      const scooterPullingIn = null;
+      const forceState = false;
+      //CLEAN lastDataFromATMEGA 
+      lastDataFromATMEGA[boxIdInATMEGA] = 0;
+      //Send data
+      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
+    }
+  });
+
+  socketClient.on("unreserve-box", async (data) => {
+    // from backend
+    console.log(`\nReceived <== From SERVER: unreserve-box for RPI_Box nº ${data.boxId} in Parking nº ${data.parkingId}`)
+
+    if (parkingId == data.parkingId) {
+      // to ATMEGA 
+      // BoxId in ATMEGA always start with 1. It's assumed that all parkings have 3 boxes.
+      const boxIdInATMEGA = parseInt(data.boxId) - (parseInt(data.parkingId) - 1) * parkingBoxesQuantity;
+      const reserveBox = false;
+      const scooterPullingIn = data.scooterPullingIn;
+      const forceState = false;
+      //CLEAN lastDataFromATMEGA 
+      lastDataFromATMEGA[boxIdInATMEGA] = 0;
+      //Send data
+      await writeToAtmega(boxIdInATMEGA, reserveBox, scooterPullingIn, forceState);
+    }
+  });
+  
+}
+
+
+function wsConnectAtmega() {
+  // Connect to Raspberry WebSocket server
+  console.log("Try connect to WebSocket_Server_Raspberry-NodeRed");
+  RpiWebsocketClient = new WebSocketClient();
+  
+
+  RpiWebsocketClient.on('connectFailed', function (error) {
+    console.log('Connect Error: ' + error.toString());
+    atmegaConnected = false;
+    
+    setTimeout(function () {
+        wsConnectAtmega();
+      }, 5000);
+    });
+
+
+  RpiWebsocketClient.on('connect', function (connection) {
+    RpiConnection = connection;
+    console.log('Raspberry_Atmega WebSocket Client Connected');
+    connection.send('{"connected":"hello"}');
+
+
+    connection.on('error', function (error) {
+      console.log("Connection Error: " + error.toString());
+    });
+
+    connection.on('close', function () {
+      console.log('echo-protocol Connection Closed');
+      atmegaConnected = false;
+      
+      setTimeout(function () {
+        wsConnectAtmega();
+      }, 5000);
+    });
+
+    connection.on('message', function (message) {
+      
+      //    console.log("Received: '" + message.utf8Data + "'");
+      readFromAtmega(message);
+    });
+
+  });
+  RpiWebsocketClient.connect("ws://127.0.0.1:1880/ws");
+}
+
+
+
+function writeToAtmega(boxId, reserve, scooterPullingIn, forceState) {
+
+  if (reserve === true && forceState === false) {
+    console.log("Sending ==> to Rpi: RESERVED_BOX" + `{"address": "${boxId}", "command":"B"}`);
+    RpiConnection.send(`{"address": "${boxId}", "command":"B"}`);
+
+  } else if (reserve === true && forceState === true) {
+    console.log("Sending ==> to Rpi: FORCE_RESERVED_BOX" + `{"address": "${boxId}", "command":"U"}`);
+    RpiConnection.send(`{"address": "${boxId}", "command":"U"}`);
+
+  } else if (scooterPullingIn === true && forceState === false) {
+    console.log("Sending ==> to Rpi: OCCUPIED_BOX" + `{"address": "${boxId}", "command":"C"}`);
+    RpiConnection.send(`{"address": "${boxId}", "command":"C"}`);
+
+  } else if (scooterPullingIn === false && forceState === false) {
+    console.log("Sending ==> to Rpi: FREE_BOX" + `{"address": "${boxId}", "command":"A"}`);
+    RpiConnection.send(`{"address": "${boxId}", "command":"A"}`);
+    
+  } else if (scooterPullingIn === true && forceState === true) {
+
+    console.log("Sending ==> to Rpi: FORCE_OCCUPIED_BOX" + `{"address": "${boxId}", "command":"T"}`);
+    RpiConnection.send(`{"address": "${boxId}", "command":"T"}`);
+
+  } else if (scooterPullingIn === false && forceState === true) {
+    console.log("Sending ==> to Rpi: FORCE_FREE_BOX" + `{"address": "${boxId}", "command":"V"}`);
+    RpiConnection.send(`{"address": "${boxId}", "command":"V"}`);
+  }
+
+}
+
+
+function readFromAtmega(message) {
+
+  console.log("\nReceived <== From Rpi: " + message.utf8Data);
+
+  if (message.utf8Data == "welcome") {
+    console.log("\nConnected to Raspberry_Atmega!!");
+    atmegaConnected = true;
+        
+    if (backendConnected === true && atmegaConnected ===true){
+      console.log("\nSOLICITANDO ESTADOS DE BOXES al SERVIDOR");
+      socketClient.emit("initializing-parking-boxes", { parkingId } );  
+   }      
+     
+  }else{
+  
+    
+   if (message.utf8Data === "NoBoxesDetected"){
+      console.log("NO SE DETECTA NINGUN BOX EN EL PARKING!!!!");
+     
+   }else{
+       
+    let newDataFromATMEGA = JSON.parse(message.utf8Data);
+
+    if (lastDataFromATMEGA[newDataFromATMEGA.address] !== newDataFromATMEGA.statusCode) {
+
+      lastDataFromATMEGA[newDataFromATMEGA.address] = newDataFromATMEGA.statusCode;
+      boxIdInBackend = parseInt(`${newDataFromATMEGA.address}`) + (parkingId - 1) * parkingBoxesQuantity;
+
+      if (newDataFromATMEGA.statusCode == "302" || newDataFromATMEGA.statusCode == "102") {
+        console.log("Sending ==> to SERVER: open-box-confirmed");
+        socketClient.emit("open-box-confirmed", { boxId: boxIdInBackend, parkingId });
+
+      } else if (newDataFromATMEGA.statusCode == "155" ) {
+        console.log("Sending ==> to SERVER: box-closed");
+        socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId });
+
+      } else if (newDataFromATMEGA.statusCode == "301" || newDataFromATMEGA.statusCode == "101") {
+        console.log("Sending ==> to SERVER:  charger-plugged-in");
+        socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
+
+      } else if (newDataFromATMEGA.statusCode == "300"  || newDataFromATMEGA.statusCode == "100") {
+        console.log("Sending ==> to SERVER:  charger-unplugged");
+        socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
+    
+      }else if (newDataFromATMEGA.statusCode == "310"  || newDataFromATMEGA.statusCode == "110") {
+        console.log("Sending ==> to SERVER:  charger-unplugged");
+        socketClient.emit("charger-unplugged", { boxId: boxIdInBackend, parkingId });
+        console.log("Sending ==> to SERVER: box-closed");
+        socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId });
+    
+      }else if (newDataFromATMEGA.statusCode == "311" ) {
+        console.log("Sending ==> to SERVER:  charger-plugged-in");
+        socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
+        console.log("Sending ==> to SERVER: box-closed");
+        socketClient.emit("box-closed", { boxId: boxIdInBackend, parkingId });
+      }
+    }
+    }
+  }
+}
+
+
+
+///////////////////////CODE FOR "PLC - PARKING"
+
+if (process.env.USING_WEBSOCKETS == "true") {
+
+  if (process.env.USING_PLC == "true" || process.env.USING_BOX_SIMULATOR_FRONTEND == "true") {
+    openPlc();
+    console.log("openPlc() has been called!")
+  }
+}
+
+let session = null;
+let client = null;
 
 let plcCurrentData = [{
   value: {
@@ -89,41 +430,6 @@ let plcCurrentData = [{
 // }];
 
 let ioUsingPLC = null;
-
-if (process.env.USING_PLC == "false") {
-  ioUsingPLC = socketIo(server, {
-    cors: {
-      // origin: process.env.BLUECITY_CLIENT,
-      origin: '*',
-      methods: ["GET", "POST"],
-      credentials: true
-    },
-    transports: ['polling', 'websocket']
-  });
-
-  ioUsingPLC.on("connect", (socket) => {
-    console.log("New simulator_frontend simulating PLC");
-
-    socketWithBox = socket;
-
-    socket.emit("simulator-welcome", { connection_confirmed: true });
-
-    socket.on("simulator-read-from-plc", (data) => {
-      console.log("simulator-read-from-plc");
-      // console.log(data);
-
-      plcCurrentData = data;
-    });
-
-    socket.on("disconnect", () => {
-      console.log("simulator_frontend simulating PLC disconnected");
-    });
-  });
-}
-
-let parkingId = process.env.PLC_PARKING_ID;
-let session = null;
-let client = null;
 
 async function closePLC() {
   if (process.env.USING_PLC == "true") {
@@ -306,7 +612,11 @@ async function openPlc() {
   let socketClient = ioClient(process.env.BACKEND_URL, {
     withCredentials: true,
     transports: ['polling', 'websocket'],
+<<<<<<< HEAD
     //ca: fs.readFileSync(".cert/certificate.ca.crt")
+=======
+    //    ca: fs.readFileSync(".cert/certificate.ca.crt")
+>>>>>>> c98e3a9464438fc471ac508cf44ef246d0d4e01f
   });
 
   socketClient.on("welcome", async (data) => {
@@ -345,6 +655,8 @@ async function openPlc() {
       await writeToPLC(boxIdInPLC, openBox, closeBox, reserveBox);
     }
   });
+
+
 
   socketClient.on("unreserve-box", async (data) => {
     // from backend
@@ -402,7 +714,7 @@ async function openPlc() {
         lastDataFromPLC[i].openBoxConfirmed = newDataFromPLC[i].openBoxConfirmed;
       }
 
-      if (lastDataFromPLC[i].detector != newDataFromPLC[i].detector) { 
+      if (lastDataFromPLC[i].detector != newDataFromPLC[i].detector) {
         if (newDataFromPLC[i].detector == 1) {
           console.log("se emite charger-plugged-in")
           socketClient.emit("charger-plugged-in", { boxId: boxIdInBackend, parkingId });
@@ -424,13 +736,46 @@ async function openPlc() {
   });
 }
 
-if (process.env.USING_WEBSOCKETS == "true") {
-  openPlc();
-  console.log("openPlc() has been called!")
+
+
+
+////////////CODE FOR "BOX_SIMULATOR_FRONTEND - PARKING"
+let io = null;
+
+if (process.env.USING_BOX_SIMULATOR_FRONTEND == "true" && process.env.USING_WEBSOCKETS == "true") {
+  ioUsingPLC = socketIo(server, {
+    cors: {
+      // origin: process.env.BLUECITY_CLIENT,
+      origin: '*',
+      methods: ["GET", "POST"],
+      credentials: true
+    },
+    transports: ['polling', 'websocket']
+  });
+
+  ioUsingPLC.on("connect", (socket) => {
+    console.log("New simulator_frontend simulating PLC");
+
+    socketWithBox = socket;
+
+    socket.emit("simulator-welcome", { connection_confirmed: true });
+
+    socket.on("simulator-read-from-plc", (data) => {
+      console.log("simulator-read-from-plc");
+      // console.log(data);
+
+      plcCurrentData = data;
+    });
+
+    socket.on("disconnect", () => {
+      console.log("simulator_frontend simulating PLC disconnected");
+    });
+  });
 }
 
-let io = null;
-if (process.env.USING_WEBSOCKETS == "false") {
+
+
+if (process.env.USING_WEBSOCKETS == "false" && process.env.USING_PLC == "false") {
   io = socketIo(server, {
     cors: {
       // origin: process.env.BLUECITY_CLIENT,

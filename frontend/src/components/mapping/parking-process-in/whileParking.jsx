@@ -145,7 +145,7 @@ const WhileParking = ({ location, history }) => {
       let data = stateParking.boxes[index];
       data.state = PARKING_MODE_PULLING_OUT_SCOOTER_ORDER_TO_OPEN_DOOR_SENT;
       BoxDataService.update(data.id, data).then(() => {
-        socketRef.current.emit('open-box-parking-in', data);
+        socketRef.current.emit('open-box-parking-out', data);
         history.push({
           pathname: '/parking-process-out',
           state: {
